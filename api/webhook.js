@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const stripe = new Stripe(stripeSecretKey);
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
