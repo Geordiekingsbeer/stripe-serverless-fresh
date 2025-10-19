@@ -40,6 +40,7 @@ export default async (req, res) => {
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         const metadata = session.metadata;
+        const customerEmail = session.customer_details ? session.customer_details.email : metadata.email;
 
         if (!metadata || !metadata.table_ids) {
             console.error('[BOOKING FAILURE] Missing metadata for booking in session:', session.id);
@@ -65,15 +66,14 @@ export default async (req, res) => {
                     start_time: metadata.booking_time,
                     end_time: endTimeStr, 
                     host_notes: `Stripe Order: ${session.id}`,
+                    // --- ADDED MISSING COLUMNS ---
+                    stripe_order_id: session.id,
+                    booking_ref: metadata.booking_ref,
+                    customer_email: customerEmail,
+                    // staff_email is intentionally omitted here as it's not provided by the customer
                 });
             
             if (error) {
                 console.error(`[SUPABASE FAILURE] Insert error for table ${tableId}:`, error.message);
             } else {
-                console.log(`[BOOKING SUCCESS] Table ${tableId} booked for ${metadata.booking_date}`);
-            }
-        }
-    }
-
-    return res.status(200).json({ received: true });
-};
+                console.log(`[BOOKING SUCCESS] Table ${tableId} booked for ${metadata.booking_date
