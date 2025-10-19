@@ -55,7 +55,7 @@ export default async (req, res) => {
                 booking_ref: booking_ref || 'N/A', 
             },
 
-            success_url: `https://geordiekingsbeer.github.io/table-picker/success.html?session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `https://geordiekingsbeer.github.io/table-picker/success.html?session_id={CHECKOUT_SESSION_ID}&tenant_id=${tenant_id}&booking_ref=${booking_ref}`,
             cancel_url: `https://geordiekingsbeer.github.io/table-picker/pick-seat.html`, 
         });
 
