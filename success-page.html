@@ -81,7 +81,6 @@
 
             const { error } = await _supa
                 .from('engagement_tracking')
-                // CRITICAL FIX: Use upsert to update the existing row created on the initial click
                 .upsert(trackingPayload, { 
                     onConflict: 'booking_ref',
                     ignoreDuplicates: false
