@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
 const SUPABASE_URL = 'https://Rrjvdabtqzkaomjuiref.supabase.co';
-// FIX: Using the correct, confirmed variable name
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY; 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
@@ -10,7 +9,7 @@ const _supaAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
-	// Vercel handles the OPTIONS preflight and CORS headers via vercel.json.
+    // FORCED DEPLOYMENT
 	if (req.method !== 'POST') {
 		return res.status(405).send('Method Not Allowed');
 	}
