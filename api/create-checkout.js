@@ -2,6 +2,10 @@ import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async (req, res) => {
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
     if (req.method !== 'POST') {
         return res.status(405).send('Method Not Allowed');
     }
@@ -55,10 +59,10 @@ export default async (req, res) => {
             cancel_url: `https://geordiekingsbeer.github.io/table-picker/pick-seat.html`, 
         });
 
-        res.status(200).json({ url: session.url });
+        return res.status(200).json({ url: session.url });
 
     } catch (error) {
         console.error('Stripe Checkout Creation Error:', error);
-        res.status(500).json({ error: 'Internal Server Error during checkout creation.' });
+        return res.status(500).json({ error: 'Internal Server Error during checkout creation.' });
     }
 };
