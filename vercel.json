@@ -4,12 +4,8 @@
       "source": "/api/(.*)",
       "headers": [
         {
-          "key": "Access-Control-Allow-Credentials",
-          "value": "true"
-        },
-        {
           "key": "Access-Control-Allow-Origin",
-          "value": "*"
+          "value": "https://geordiekingsbeer.github.io"
         },
         {
           "key": "Access-Control-Allow-Methods",
