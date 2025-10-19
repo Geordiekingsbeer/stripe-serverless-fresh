@@ -74,7 +74,8 @@
             const trackingPayload = {
                 tenant_id: tenantId,
                 booking_ref: bookingRef,
-                payment_successful: true,
+                // FIX: Cast to string 'TRUE' to resolve data type/RLS conflicts
+                payment_successful: 'TRUE', 
                 session_id: sessionId,
                 event_type: 'payment_successful'
             };
@@ -86,7 +87,7 @@
                     ignoreDuplicates: false
                 })
                 .update({ 
-                    payment_successful: true,
+                    payment_successful: 'TRUE',
                     event_type: 'payment_successful'
                 });
 
