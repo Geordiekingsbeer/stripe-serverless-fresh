@@ -21,7 +21,6 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         h1 { 
-            /* UPDATED: Matches the light olive green of the table color */
             color: #789069; 
             font-size: 28px;
             margin-bottom: 10px;
@@ -35,61 +34,70 @@
             font-size: 16px;
             margin-top: 15px; 
         }
-        /* Ensure the unnecessary elements are hidden from the user */
         #tracking-message { display: none !important; }
+        .error-message { color: #d32f2f; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
-        
-        <h1>Reservation Confirmed! 🍽️</h1>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Check_green_icon.svg/1200px-Check_green_icon.svg.png" style="width: 50px; margin-bottom: 20px;" alt="Checkmark">
+        <h1>Reservation Confirmed!</h1>
         
         <p>Thank you for your payment. Your table reservation has been successfully booked for the selected date and time.</p>
         
-        <p id="tracking-message">Confirmation status finalized.</p>
+        <p id="status-message"></p>
         
         <p>Your payment receipt has been sent to the email address you provided.</p>
         
-        <p>You can close this window now.</p>
+        <p>You can close this window now or return to the <a href="pick-seat.html">floor plan</a>.</p>
     </div>
 
     <script>
-        // --- Supabase Setup (MUST MATCH YOUR KEYS) ---
         const supabaseUrl = 'https://Rrjvdabtqzkaomjuiref.supabase.co';
         const supabaseAnon = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyanZkYWJ0cXprYW9tanVpcmVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNDM3MzQsImV4cCI6MjA3NDcxOTczNH0.wAEeowZ8Yc8K54jAxEbY-8-mM0OGciMmyz6fJb9Z1Qg';
         const _supa = supabase.createClient(supabaseUrl, supabaseAnon);
         
-        // CRITICAL: This tracking logic MUST remain, even if the message is hidden.
-        async function logConversionStatusFallback() {
+        const statusMessage = document.getElementById('status-message');
+
+        async function logPaymentSuccess() {
             const urlParams = new URLSearchParams(window.location.search);
             const tenantId = urlParams.get('tenant_id');
             const bookingRef = urlParams.get('booking_ref');
+            const sessionId = urlParams.get('session_id');
 
-            if (!tenantId || !bookingRef) return; 
-
-            // Check if the webhook already succeeded (the booking exists in premium_slots)
-            const { data: bookingData } = await _supa
-                .from('premium_slots')
-                .select('id')
-                .eq('booking_ref', bookingRef);
-            
-            if (bookingData && bookingData.length > 0) {
-                // Booking was already fulfilled by the webhook. Do nothing.
+            if (!tenantId || !bookingRef) {
+                statusMessage.textContent = 'Error: Missing booking details for tracking.';
+                statusMessage.classList.add('error-message');
                 return;
             }
 
-            // If we reach here, the webhook failed. Log the TRUE status as a fallback.
+            const trackingPayload = {
+                tenant_id: tenantId,
+                booking_ref: bookingRef,
+                payment_successful: true,
+                session_id: sessionId,
+                event_type: 'payment_successful'
+            };
+
             const { error } = await _supa
                 .from('engagement_tracking')
-                .update({ payment_successful: true })
-                .eq('booking_ref', bookingRef);
+                // CRITICAL FIX: Use upsert to update the existing row created on the initial click
+                .upsert(trackingPayload, { 
+                    onConflict: 'booking_ref',
+                    ignoreDuplicates: false
+                })
+                .update({ 
+                    payment_successful: true,
+                    event_type: 'payment_successful'
+                });
 
             if (error) {
-                console.error('Fallback Tracking Failed:', error);
+                statusMessage.textContent = `Error: Failed to finalize tracking. Code: ${error.code}`;
+                statusMessage.classList.add('error-message');
             }
         }
 
-        document.addEventListener('DOMContentLoaded', logConversionStatusFallback);
+        document.addEventListener('DOMContentLoaded', logPaymentSuccess);
     </script>
 </body>
 </html>
