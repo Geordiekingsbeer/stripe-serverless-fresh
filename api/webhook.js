@@ -1,13 +1,13 @@
-import Stripe from 'stripe'; 
+import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET; 
-const supabaseUrl = process.env.SUPABASE_URL; 
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
 const stripe = new Stripe(stripeSecretKey);
-const supabase = createClient(supabaseUrl, supabaseServiceKey); 
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const getRawBody = (req) => {
     return new Promise((resolve) => {
@@ -54,8 +54,10 @@ export default async (req, res) => {
         endTime.setMinutes(minute);
         const endTimeStr = `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}:00`;
 
-        const customerEmail = session.customer_details ? session.customer_details.email : metadata.email;
+        const customerEmail = metadata.email || (session.customer_details ? session.customer_details.email : null);
+        const receiveOffers = metadata.receive_offers;
 
+        // 1. Insert into premium_slots (Transactional Booking Data)
         for (const tableId of tableIds) {
             const { error } = await supabase
                 .from('premium_slots')
@@ -66,17 +68,39 @@ export default async (req, res) => {
                     start_time: metadata.booking_time,
                     end_time: endTimeStr, 
                     host_notes: `Stripe Order: ${session.id}`,
-                    
                     stripe_order_id: session.id, 
                     booking_ref: metadata.booking_ref, 
                     customer_email: customerEmail,
-                    staff_email: null, 
+                    payment_status: 'PAID', // Required for admin panel sync
+                    is_manual_booking: false, // Required for admin panel sync
+                    receive_offers: (receiveOffers === 'TRUE'), // Save the customer's choice
                 });
             
             if (error) {
                 console.error(`[SUPABASE FAILURE] Insert error for table ${tableId}:`, error.message);
             } else {
                 console.log(`[BOOKING SUCCESS] Table ${tableId} booked for ${metadata.booking_date}`);
+            }
+        }
+
+        // 2. Insert into marketing_optins (Consent Data)
+        if (receiveOffers === 'TRUE' && customerEmail) {
+            const optInRow = {
+                email: customerEmail,
+                tenant_id: metadata.tenant_id,
+                booking_date: metadata.booking_date,
+                location: metadata.tenant_id,
+                source: metadata.booking_ref || 'table_booking',
+                consent_text: 'Send me restaurant discounts and offers',
+                is_subscribed: true
+            };
+            
+            const { error: optinError } = await supabase
+                .from('marketing_optins')
+                .upsert([optInRow], { onConflict: 'email, tenant_id' }); // Upsert by email and tenant to prevent duplicates per restaurant
+
+            if (optinError) {
+                console.error('Error inserting marketing opt-in:', optinError);
             }
         }
     }
