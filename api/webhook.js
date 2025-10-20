@@ -1,23 +1,39 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendBookingNotification(booking, type) {
     const staffEmail = 'geordie.kingsbeer@gmail.com';
-    const subject = `[NEW BOOKING - ${type}] Table ${booking.table_id} on ${booking.date}`;
+    const senderEmail = 'onboarding@resend.dev'; 
+
+    const subject = `[NEW BOOKING - ${type}] Table(s) ${booking.table_id} on ${booking.date}`;
     const body = `
-        A new ${type} booking has been confirmed!
-        Restaurant: ${booking.tenant_id}
-        Table ID: ${booking.table_id}
-        Date: ${booking.date}
-        Time: ${booking.start_time} - ${booking.end_time}
-        Notes: ${booking.host_notes || 'Stripe Payment Confirmed'}
-        Customer Email: ${booking.customer_email || 'N/A'}
-        
-        -- SENT VIA VERCEL SERVERLESS FUNCTION --
+        <p>A new <b>${type}</b> booking has been confirmed for <b>${booking.tenant_id}</b>!</p>
+        <ul>
+            <li><strong>Table ID(s):</strong> ${booking.table_id}</li>
+            <li><strong>Date:</strong> ${booking.date}</li>
+            <li><strong>Time:</strong> ${booking.start_time} - ${booking.end_time}</li>
+            <li><strong>Source:</strong> ${type}</li>
+            <li><strong>Notes:</strong> ${booking.host_notes || 'Stripe Payment Confirmed'}</li>
+            <li><strong>Customer Email:</strong> ${booking.customer_email || 'N/A'}</li>
+        </ul>
     `;
     
-    console.log(`Email Mock: Sending to ${staffEmail}. Subject: ${subject}`);
-    return { success: true };
+    try {
+        await resend.emails.send({
+            from: senderEmail,
+            to: staffEmail,
+            subject: subject,
+            html: body,
+        });
+        console.log(`Email Sent: Successfully notified ${staffEmail}.`);
+        return { success: true };
+    } catch (error) {
+        console.error('Email Error: Failed to send notification via Resend:', error);
+        return { success: false, error: error.message };
+    }
 }
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -76,7 +92,6 @@ export default async (req, res) => {
         const customerEmail = metadata.email || (session.customer_details ? session.customer_details.email : null);
         const receiveOffers = metadata.receive_offers;
 
-        // Prepare composite booking object for notification
         const primaryBooking = {
             table_id: tableIds.join(', '),
             date: metadata.booking_date,
@@ -113,7 +128,7 @@ export default async (req, res) => {
             }
         }
         
-        // --- NEW: Send Email Notification for Customer Booking ---
+        // Send Email Notification for Customer Booking
         await sendBookingNotification(primaryBooking, 'CUSTOMER PAID');
 
         // 2. Insert into marketing_optins (Consent Data)
