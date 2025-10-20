@@ -84,6 +84,22 @@ export default async (req, res) => {
         console.error(`[WEBHOOK FAILURE] Signature verification failed: ${err.message}`);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
+    
+    // --- START IDEMPOTENCY CHECK (NEW) ---
+    const eventId = event.id;
+    const { data: existingEvent, error: fetchError } = await supabase
+        .from('webhook_events')
+        .select('id')
+        .eq('stripe_event_id', eventId)
+        .maybeSingle();
+
+    if (existingEvent) {
+        // Event already processed. Return 200 OK immediately.
+        console.log(`[IDEMPOTENCY] Event ${eventId} already processed.`);
+        return res.status(200).json({ received: true });
+    }
+    // --- END IDEMPOTENCY CHECK ---
+
 
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
@@ -94,7 +110,6 @@ export default async (req, res) => {
             return res.status(400).end();
         }
 
-        // Get total amount paid from Stripe Session (amount_total is the paid amount in pence/cents)
         const totalAmountPence = session.amount_total;
 
         const tableIds = metadata.table_ids.split(',');
@@ -136,12 +151,14 @@ export default async (req, res) => {
                     payment_status: 'PAID',
                     is_manual_booking: false,
                     receive_offers: (receiveOffers === 'TRUE'),
-                    // FIX: Save the actual amount paid to the database
                     total_pence: totalAmountPence,
                 });
             
             if (error) {
                 console.error(`[SUPABASE FAILURE] Insert error for table ${tableId}:`, error.message);
+                // CRITICAL: Since the booking failed, we don't log the eventId yet, 
+                // allowing Stripe to retry. If we logged it, Stripe would stop retrying.
+                return res.status(500).json({ error: 'Database insert failed.' });
             } else {
                 console.log(`[BOOKING SUCCESS] Table ${tableId} booked for ${metadata.booking_date}`);
             }
@@ -167,9 +184,21 @@ export default async (req, res) => {
 
             if (optinError) {
                 console.error('Error inserting marketing opt-in:', optinError);
+                // Non-critical failure, allow process to continue
             }
+        }
+        
+        // --- LOG EVENT ID AFTER ALL PROCESSING IS COMPLETE (NEW) ---
+        const { error: logError } = await supabase
+            .from('webhook_events')
+            .insert({ stripe_event_id: eventId, event_type: event.type });
+            
+        if (logError) {
+            console.error('[IDEMPOTENCY ERROR] Failed to log Stripe event ID:', logError);
+            // Non-critical, still return 200 to Stripe so they don't retry, but log it.
         }
     }
 
+    // Always return 200 OK to Stripe to confirm receipt and stop retries
     return res.status(200).json({ received: true });
 };
