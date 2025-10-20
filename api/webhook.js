@@ -117,7 +117,7 @@ export default async (req, res) => {
             host_notes: `Stripe Order: ${session.id}`, 
             customer_email: customerEmail,
             customer_name: metadata.customer_name || 'Customer',
-            // NEW: Extract party_size from metadata
+            // FIX: Extract party_size from metadata and ensure it's passed to the email function
             party_size: metadata.party_size || 'N/A'
         };
 
