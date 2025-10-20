@@ -6,12 +6,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 function cleanNotes(notes) {
     if (!notes) return 'N/A';
-    // Regex to find and remove Stripe Checkout Session IDs (cs_live or cs_test)
     const stripeIdRegex = /(Order|Transaction)?\s*:\s*(cs_live_|cs_test_)[a-zA-Z0-9]{24,}/g;
     
     let cleanedNotes = notes.replace(stripeIdRegex, '').trim();
-
-    // Remove leading/trailing commas and whitespace
     cleanedNotes = cleanedNotes.replace(/^,?\s*|,\s*$/g, '').trim();
 
     return cleanedNotes || 'Stripe Payment Confirmed (No additional notes)';
@@ -97,6 +94,9 @@ export default async (req, res) => {
             return res.status(400).end();
         }
 
+        // Get total amount paid from Stripe Session (amount_total is the paid amount in pence/cents)
+        const totalAmountPence = session.amount_total;
+
         const tableIds = metadata.table_ids.split(',');
         
         const [hour, minute] = metadata.booking_time.split(':').map(Number);
@@ -114,7 +114,7 @@ export default async (req, res) => {
             start_time: metadata.booking_time,
             end_time: endTimeStr,
             tenant_id: metadata.tenant_id,
-            host_notes: `Stripe Order: ${session.id}`, // Note: This will still save the ID to the database
+            host_notes: `Stripe Order: ${session.id}`, 
             customer_email: customerEmail,
             customer_name: metadata.customer_name || 'Customer'
         };
@@ -129,14 +129,15 @@ export default async (req, res) => {
                     date: metadata.booking_date,
                     start_time: metadata.booking_time,
                     end_time: endTimeStr, 
-                    // Save Stripe ID to DB for record keeping
-                    host_notes: `Stripe Order: ${session.id}`, 
+                    host_notes: primaryBooking.host_notes, 
                     stripe_order_id: session.id, 
                     booking_ref: metadata.booking_ref, 
                     customer_email: customerEmail,
                     payment_status: 'PAID',
                     is_manual_booking: false,
                     receive_offers: (receiveOffers === 'TRUE'),
+                    // FIX: Save the actual amount paid to the database
+                    total_pence: totalAmountPence,
                 });
             
             if (error) {
