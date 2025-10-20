@@ -1,5 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
+async function sendBookingNotification(booking, type) {
+    const staffEmail = 'geordie.kingsbeer@gmail.com';
+    const subject = `[NEW BOOKING - ${type}] Table ${booking.table_id} on ${booking.date}`;
+    const body = `
+        A new ${type} booking has been confirmed!
+        Restaurant: ${booking.tenant_id}
+        Table ID: ${booking.table_id}
+        Date: ${booking.date}
+        Time: ${booking.start_time} - ${booking.end_time}
+        Notes: ${booking.host_notes || 'None'}
+        Customer Email: ${booking.customer_email || 'N/A'}
+        
+        -- SENT VIA VERCEL SERVERLESS FUNCTION --
+    `;
+    
+    console.log(`Email Mock: Sending to ${staffEmail}. Subject: ${subject}`);
+    return { success: true };
+}
+
 const SUPABASE_URL = 'https://Rrjvdabtqzkaomjuiref.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -46,6 +65,9 @@ export default async function handler(req, res) {
         }
 
         const booking = insertedData[0];
+        
+        // Send Email Notification for Admin Booking
+        await sendBookingNotification(booking, 'ADMIN MANUAL');
 
         return res.status(200).json({
             message: 'Admin booking created and confirmed successfully.',
