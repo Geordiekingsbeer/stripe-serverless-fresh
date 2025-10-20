@@ -182,15 +182,6 @@ export default async (req, res) => {
                 console.error('Error inserting marketing opt-in:', optinError);
             }
         }
-        
-        // LOG EVENT ID AFTER ALL PROCESSING IS COMPLETE
-        const { error: logError } = await supabase
-            .from('webhook_events')
-            .insert({ stripe_event_id: eventId, event_type: event.type });
-            
-        if (logError) {
-            console.error('[IDEMPOTENCY ERROR] Failed to log Stripe event ID:', logError);
-        }
     }
 
     return res.status(200).json({ received: true });
