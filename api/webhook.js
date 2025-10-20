@@ -11,6 +11,7 @@ async function sendBookingNotification(booking, type) {
     const subject = `[NEW BOOKING - ${type}] Table(s) ${booking.table_id} on ${booking.date}`;
     const body = `
         <p>A new <b>${type}</b> booking has been confirmed for <b>${booking.tenant_id}</b>!</p>
+        <p><strong>Customer:</strong> ${booking.customer_name || 'N/A'}</p>
         <ul>
             <li><strong>Table ID(s):</strong> ${booking.table_id}</li>
             <li><strong>Date:</strong> ${booking.date}</li>
@@ -28,7 +29,7 @@ async function sendBookingNotification(booking, type) {
             subject: subject,
             html: body,
         });
-        console.log(`Email Sent: Successfully notified ${staffEmail}.`);
+        console.log(`Email Sent: Successfully notified ${staffEmail} via Resend.`);
         return { success: true };
     } catch (error) {
         console.error('Email Error: Failed to send notification via Resend:', error);
@@ -100,6 +101,8 @@ export default async (req, res) => {
             tenant_id: metadata.tenant_id,
             host_notes: `Stripe Order: ${session.id}`,
             customer_email: customerEmail,
+            // --- NEW: Extract customer_name from metadata ---
+            customer_name: metadata.customer_name || 'Customer'
         };
 
         // 1. Insert into premium_slots (Transactional Booking Data)
@@ -128,7 +131,6 @@ export default async (req, res) => {
             }
         }
         
-        // Send Email Notification for Customer Booking
         await sendBookingNotification(primaryBooking, 'CUSTOMER PAID');
 
         // 2. Insert into marketing_optins (Consent Data)
@@ -150,7 +152,7 @@ export default async (req, res) => {
             if (optinError) {
                 console.error('Error inserting marketing opt-in:', optinError);
             }
-        } 
+        }
     }
 
     return res.status(200).json({ received: true });
