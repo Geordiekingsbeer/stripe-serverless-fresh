@@ -12,6 +12,7 @@ async function sendBookingNotification(booking, type) {
         <p>A new <b>${type}</b> booking has been confirmed for <b>${booking.tenant_id}</b>!</p>
         <p><strong>Customer:</strong> ${booking.customer_name || 'Manual Admin Booking'}</p>
         <ul>
+            <li><strong>Party Size:</strong> ${booking.party_size || 'N/A'}</li>
             <li><strong>Table ID:</strong> ${booking.table_id}</li>
             <li><strong>Date:</strong> ${booking.date}</li>
             <li><strong>Time:</strong> ${booking.start_time} - ${booking.end_time}</li>
@@ -51,7 +52,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     try {
-        const { tableId, date, startTime, endTime, notes, tenantId } = req.body;
+        const { tableId, date, startTime, endTime, notes, tenantId, partySize } = req.body; // NEW: Capture partySize from frontend payload
 
         if (!tableId || !date || !startTime || !endTime || !tenantId) {
             return res.status(400).json({ error: 'Missing required booking data.' });
@@ -64,9 +65,11 @@ export default async function handler(req, res) {
             end_time: endTime,
             host_notes: notes || 'Manual Admin Booking',
             tenant_id: tenantId,
-            customer_email: 'admin_booked@yourrestaurant.com', // Keep placeholder in DB for record integrity
+            customer_email: 'admin_booked@yourrestaurant.com',
             payment_status: 'PAID',
-            is_manual_booking: true
+            is_manual_booking: true,
+            // Assuming the frontend sends a partySize in the payload
+            party_size: partySize || 0
         };
 
         const { data: insertedData, error: insertError } = await _supaAdmin
@@ -84,11 +87,12 @@ export default async function handler(req, res) {
 
         const booking = insertedData[0];
         
-        // Prepare notification payload with clean email/name for staff view
+        // Prepare notification payload with party size
         const adminBookingNotification = {
             ...booking,
-            customer_email: 'N/A (Staff Booked)', // Override email in payload only
+            customer_email: 'N/A (Staff Booked)',
             customer_name: 'Manual Admin Booking',
+            party_size: booking.party_size
         };
         
         await sendBookingNotification(adminBookingNotification, 'ADMIN MANUAL');
