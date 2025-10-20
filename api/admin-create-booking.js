@@ -1,23 +1,42 @@
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
+
+// Initialize Resend client using the environment variable
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendBookingNotification(booking, type) {
     const staffEmail = 'geordie.kingsbeer@gmail.com';
+    // Use a sender email you have verified with Resend, or their default
+    const senderEmail = 'onboarding@resend.dev'; 
+
     const subject = `[NEW BOOKING - ${type}] Table ${booking.table_id} on ${booking.date}`;
     const body = `
-        A new ${type} booking has been confirmed!
-        Restaurant: ${booking.tenant_id}
-        Table ID: ${booking.table_id}
-        Date: ${booking.date}
-        Time: ${booking.start_time} - ${booking.end_time}
-        Notes: ${booking.host_notes || 'None'}
-        Customer Email: ${booking.customer_email || 'N/A'}
-        
-        -- SENT VIA VERCEL SERVERLESS FUNCTION --
+        <p>A new <b>${type}</b> booking has been confirmed for <b>${booking.tenant_id}</b>!</p>
+        <ul>
+            <li><strong>Table ID:</strong> ${booking.table_id}</li>
+            <li><strong>Date:</strong> ${booking.date}</li>
+            <li><strong>Time:</strong> ${booking.start_time} - ${booking.end_time}</li>
+            <li><strong>Source:</strong> ${type}</li>
+            <li><strong>Notes:</strong> ${booking.host_notes || 'None'}</li>
+            <li><strong>Customer Email:</strong> ${booking.customer_email || 'N/A'}</li>
+        </ul>
     `;
     
-    console.log(`Email Mock: Sending to ${staffEmail}. Subject: ${subject}`);
-    return { success: true };
+    try {
+        await resend.emails.send({
+            from: senderEmail,
+            to: staffEmail,
+            subject: subject,
+            html: body,
+        });
+        console.log(`Email Sent: Successfully notified ${staffEmail} via Resend.`);
+        return { success: true };
+    } catch (error) {
+        console.error('Email Error: Failed to send notification via Resend:', error);
+        return { success: false, error: error.message };
+    }
 }
+
 
 const SUPABASE_URL = 'https://Rrjvdabtqzkaomjuiref.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -66,7 +85,7 @@ export default async function handler(req, res) {
 
         const booking = insertedData[0];
         
-        // Send Email Notification for Admin Booking
+        // NOW USES THE REAL RESEND FUNCTION DEFINED ABOVE
         await sendBookingNotification(booking, 'ADMIN MANUAL');
 
         return res.status(200).json({
