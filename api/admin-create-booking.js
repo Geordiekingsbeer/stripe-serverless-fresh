@@ -1,17 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
-// Initialize Resend client using the environment variable
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendBookingNotification(booking, type) {
     const staffEmail = 'geordie.kingsbeer@gmail.com';
-    // Use a sender email you have verified with Resend, or their default
     const senderEmail = 'onboarding@resend.dev'; 
 
     const subject = `[NEW BOOKING - ${type}] Table ${booking.table_id} on ${booking.date}`;
     const body = `
         <p>A new <b>${type}</b> booking has been confirmed for <b>${booking.tenant_id}</b>!</p>
+        <p><strong>Customer:</strong> ${booking.customer_name || 'Admin Booked Slot'}</p>
         <ul>
             <li><strong>Table ID:</strong> ${booking.table_id}</li>
             <li><strong>Date:</strong> ${booking.date}</li>
@@ -85,8 +84,13 @@ export default async function handler(req, res) {
 
         const booking = insertedData[0];
         
-        // NOW USES THE REAL RESEND FUNCTION DEFINED ABOVE
-        await sendBookingNotification(booking, 'ADMIN MANUAL');
+        // --- NEW: Add customer_name for the Admin Notification ---
+        const adminBookingNotification = {
+            ...booking,
+            customer_name: 'Manual Admin Booking',
+        };
+        
+        await sendBookingNotification(adminBookingNotification, 'ADMIN MANUAL');
 
         return res.status(200).json({
             message: 'Admin booking created and confirmed successfully.',
