@@ -85,6 +85,18 @@ export default async (req, res) => {
         console.error(`[WEBHOOK FAILURE] Signature verification failed: ${err.message}`);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
+    
+    const eventId = event.id;
+    const { data: existingEvent } = await supabase
+        .from('webhook_events')
+        .select('id')
+        .eq('stripe_event_id', eventId)
+        .maybeSingle();
+
+    if (existingEvent) {
+        console.log(`[IDEMPOTENCY] Event ${eventId} already processed.`);
+        return res.status(200).json({ received: true });
+    }
 
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
@@ -117,7 +129,6 @@ export default async (req, res) => {
             host_notes: `Stripe Order: ${session.id}`, 
             customer_email: customerEmail,
             customer_name: metadata.customer_name || 'Customer',
-            // FIX: Extract party_size from metadata and ensure it's passed to the email function
             party_size: metadata.party_size || 'N/A'
         };
 
@@ -143,6 +154,7 @@ export default async (req, res) => {
             
             if (error) {
                 console.error(`[SUPABASE FAILURE] Insert error for table ${tableId}:`, error.message);
+                return res.status(500).json({ error: 'Database insert failed.' });
             } else {
                 console.log(`[BOOKING SUCCESS] Table ${tableId} booked for ${metadata.booking_date}`);
             }
@@ -169,6 +181,15 @@ export default async (req, res) => {
             if (optinError) {
                 console.error('Error inserting marketing opt-in:', optinError);
             }
+        }
+        
+        // LOG EVENT ID AFTER ALL PROCESSING IS COMPLETE
+        const { error: logError } = await supabase
+            .from('webhook_events')
+            .insert({ stripe_event_id: eventId, event_type: event.type });
+            
+        if (logError) {
+            console.error('[IDEMPOTENCY ERROR] Failed to log Stripe event ID:', logError);
         }
     }
 
