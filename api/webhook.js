@@ -150,7 +150,7 @@ export default async (req, res) => {
             if (optinError) {
                 console.error('Error inserting marketing opt-in:', optinError);
             }
-        }
+        } 
     }
 
     return res.status(200).json({ received: true });
