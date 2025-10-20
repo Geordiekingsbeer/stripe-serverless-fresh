@@ -4,9 +4,24 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+function cleanNotes(notes) {
+    if (!notes) return 'N/A';
+    // Regex to find and remove Stripe Checkout Session IDs (cs_live or cs_test)
+    const stripeIdRegex = /(Order|Transaction)?\s*:\s*(cs_live_|cs_test_)[a-zA-Z0-9]{24,}/g;
+    
+    let cleanedNotes = notes.replace(stripeIdRegex, '').trim();
+
+    // Remove leading/trailing commas and whitespace
+    cleanedNotes = cleanedNotes.replace(/^,?\s*|,\s*$/g, '').trim();
+
+    return cleanedNotes || 'Stripe Payment Confirmed (No additional notes)';
+}
+
+
 async function sendBookingNotification(booking, type) {
     const staffEmail = 'geordie.kingsbeer@gmail.com';
     const senderEmail = 'onboarding@resend.dev'; 
+    const cleanedNotes = cleanNotes(booking.host_notes);
 
     const subject = `[NEW BOOKING - ${type}] Table(s) ${booking.table_id} on ${booking.date}`;
     const body = `
@@ -17,7 +32,7 @@ async function sendBookingNotification(booking, type) {
             <li><strong>Date:</strong> ${booking.date}</li>
             <li><strong>Time:</strong> ${booking.start_time} - ${booking.end_time}</li>
             <li><strong>Source:</strong> ${type}</li>
-            <li><strong>Notes:</strong> ${booking.host_notes || 'Stripe Payment Confirmed'}</li>
+            <li><strong>Notes:</strong> ${cleanedNotes}</li>
             <li><strong>Customer Email:</strong> ${booking.customer_email || 'N/A'}</li>
         </ul>
     `;
@@ -99,9 +114,8 @@ export default async (req, res) => {
             start_time: metadata.booking_time,
             end_time: endTimeStr,
             tenant_id: metadata.tenant_id,
-            host_notes: `Stripe Order: ${session.id}`,
+            host_notes: `Stripe Order: ${session.id}`, // Note: This will still save the ID to the database
             customer_email: customerEmail,
-            // --- NEW: Extract customer_name from metadata ---
             customer_name: metadata.customer_name || 'Customer'
         };
 
@@ -115,7 +129,8 @@ export default async (req, res) => {
                     date: metadata.booking_date,
                     start_time: metadata.booking_time,
                     end_time: endTimeStr, 
-                    host_notes: `Stripe Order: ${session.id}`,
+                    // Save Stripe ID to DB for record keeping
+                    host_notes: `Stripe Order: ${session.id}`, 
                     stripe_order_id: session.id, 
                     booking_ref: metadata.booking_ref, 
                     customer_email: customerEmail,
