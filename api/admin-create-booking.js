@@ -10,14 +10,14 @@ async function sendBookingNotification(booking, type) {
     const subject = `[NEW BOOKING - ${type}] Table ${booking.table_id} on ${booking.date}`;
     const body = `
         <p>A new <b>${type}</b> booking has been confirmed for <b>${booking.tenant_id}</b>!</p>
-        <p><strong>Customer:</strong> ${booking.customer_name || 'Admin Booked Slot'}</p>
+        <p><strong>Customer:</strong> ${booking.customer_name || 'Manual Admin Booking'}</p>
         <ul>
             <li><strong>Table ID:</strong> ${booking.table_id}</li>
             <li><strong>Date:</strong> ${booking.date}</li>
             <li><strong>Time:</strong> ${booking.start_time} - ${booking.end_time}</li>
             <li><strong>Source:</strong> ${type}</li>
             <li><strong>Notes:</strong> ${booking.host_notes || 'None'}</li>
-            <li><strong>Customer Email:</strong> ${booking.customer_email || 'N/A'}</li>
+            <li><strong>Customer Email:</strong> N/A (Staff Booked)</li>
         </ul>
     `;
     
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
             end_time: endTime,
             host_notes: notes || 'Manual Admin Booking',
             tenant_id: tenantId,
-            customer_email: 'admin_booked@yourrestaurant.com',
+            customer_email: 'admin_booked@yourrestaurant.com', // Keep placeholder in DB for record integrity
             payment_status: 'PAID',
             is_manual_booking: true
         };
@@ -84,9 +84,10 @@ export default async function handler(req, res) {
 
         const booking = insertedData[0];
         
-        // --- NEW: Add customer_name for the Admin Notification ---
+        // Prepare notification payload with clean email/name for staff view
         const adminBookingNotification = {
             ...booking,
+            customer_email: 'N/A (Staff Booked)', // Override email in payload only
             customer_name: 'Manual Admin Booking',
         };
         
