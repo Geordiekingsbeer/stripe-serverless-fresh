@@ -44,7 +44,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const _supaAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', 'https://geordiekingsbeer.github.io');
+    res.setHeader('Access-Control-Allow-Origin', 'https://book.dineselect.co');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     try {
-        const { tableId, date, startTime, endTime, notes, tenantId, partySize } = req.body; // NEW: Capture partySize from frontend payload
+        const { tableId, date, startTime, endTime, notes, tenantId, partySize } = req.body;
 
         if (!tableId || !date || !startTime || !endTime || !tenantId) {
             return res.status(400).json({ error: 'Missing required booking data.' });
@@ -68,7 +68,6 @@ export default async function handler(req, res) {
             customer_email: 'admin_booked@yourrestaurant.com',
             payment_status: 'PAID',
             is_manual_booking: true,
-            // Assuming the frontend sends a partySize in the payload
             party_size: partySize || 0
         };
 
@@ -80,14 +79,13 @@ export default async function handler(req, res) {
         if (insertError) {
             console.error('Supabase insert failed:', insertError);
             if (insertError.code === '23505') {
-                 return res.status(409).json({ error: 'Table is already booked during this time slot (Database Conflict).' });
+                return res.status(409).json({ error: 'Table is already booked during this time slot (Database Conflict).' });
             }
             return res.status(500).json({ error: 'Database insert failed. Check Vercel logs.' });
         }
 
         const booking = insertedData[0];
         
-        // Prepare notification payload with party size
         const adminBookingNotification = {
             ...booking,
             customer_email: 'N/A (Staff Booked)',
