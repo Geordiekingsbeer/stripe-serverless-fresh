@@ -2,8 +2,7 @@ import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async (req, res) => {
-    // Add CORS headers for Vercel edge compatibility, even if vercel.json is present
-    res.setHeader('Access-Control-Allow-Origin', 'https://geordiekingsbeer.github.io');
+    res.setHeader('Access-Control-Allow-Origin', 'https://book.dineselect.co');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -26,7 +25,7 @@ export default async (req, res) => {
             party_size, 
             tenant_id, 
             booking_ref,
-            receive_offers // NEW: Capture the opt-in flag
+            receive_offers
         } = req.body;
         
         if (!table_ids || total_pence <= 0 || !email) {
@@ -59,12 +58,12 @@ export default async (req, res) => {
                 party_size: party_size.toString(),
                 tenant_id: tenant_id,
                 booking_ref: booking_ref || 'N/A',
-                receive_offers: receive_offers ? 'TRUE' : 'FALSE', // NEW: Pass opt-in status as string
-                email: email // Add email here for easy webhook access
+                receive_offers: receive_offers ? 'TRUE' : 'FALSE',
+                email: email
             },
 
-            success_url: `https://geordiekingsbeer.github.io/table-picker/success.html?session_id={CHECKOUT_SESSION_ID}&tenant_id=${tenant_id}&booking_ref=${booking_ref}`,
-            cancel_url: `https://geordiekingsbeer.github.io/table-picker/pick-seat.html`, 
+            success_url: `https://book.dineselect.co/success.html?session_id={CHECKOUT_SESSION_ID}&tenant_id=${tenant_id}&booking_ref=${booking_ref}`,
+            cancel_url: `https://book.dineselect.co/pick-seat.html`, 
         });
 
         return res.status(200).json({ url: session.url });
