@@ -214,7 +214,19 @@
 			border-radius: 5px;
 			box-sizing: border-box;
 		}
-        
+        
+        /* --- NEW STYLE FOR WARNING --- */
+        .non-refundable-warning {
+            font-size: 13px;
+            color: #d32f2f; /* Red color for warning */
+            font-weight: bold;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            text-align: center;
+            padding: 5px 0;
+            border-top: 1px solid #ffdddd;
+        }
+		
         #future-offers-optin {
             width: auto !important; 
             margin: 0 10px 0 0 !important; 
@@ -284,7 +296,11 @@
                         Yes, I would like to receive future offers and discounts from restaurants in my area.
                     </label>
                 </div>
-                <button type="submit" id="confirm-booking-btn">Proceed to Payment</button>
+
+                <div class="non-refundable-warning">
+                    PLEASE NOTE: This is a NON-REFUNDABLE purchase to secure your chosen table.
+                </div>
+                                <button type="submit" id="confirm-booking-btn">Proceed to Payment</button>
 			</form>
 		</div>
 	</div>
@@ -777,8 +793,8 @@
         // Check 2: Block if too big/small for party size
         if (tableRect.fill() === FILTERED_COLOR) {
             alert('Table unavailable.');
-            return;
-        }
+			return;
+		}
         // Check 3: Block if already booked by time
 		if (tableRect.fill() === BOOKED_COLOR) {
 			alert('This table is already booked at this time.');
