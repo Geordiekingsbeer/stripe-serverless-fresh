@@ -19,8 +19,8 @@
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+        /* Removed unnecessary h1 color style here as it's now applied inline */
         h1 { 
-            color: #001C0A;
             font-size: 28px;
             margin-bottom: 10px;
         }
@@ -34,11 +34,14 @@
 </head>
 <body>
     <div class="container">
-        <h1>Table Confirmed! 🍽️</h1>
+        <h1>
+            <span style="color: #001C0A;">Table</span> 
+            <span style="color: #CFE3CA; font-weight: bold;">Confirmed</span>
+        </h1>
         
         <p>Thank you for your payment. Your table reservation has been successfully booked for the selected date and time - See you soon!</p>
         
-        </div>
+    </div>
 
     <script>
         // --- Supabase Setup (Must Match Your Project Keys) ---
