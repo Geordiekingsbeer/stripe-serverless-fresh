@@ -3,13 +3,34 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-async function sendBookingNotification(booking, type) {
+const SUPABASE_URL = 'https://Rrjvdabtqzkaomjuiref.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const _supaAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+async function getTenantDisplayName(tenantId) {
+    const { data, error } = await _supaAdmin
+        .from('tenants')
+        .select('display_name')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+
+    if (error || !data) {
+        console.error('Error fetching tenant display name:', error);
+        return tenantId; // Fallback to the ID if lookup fails
+    }
+    return data.display_name;
+}
+
+async function sendBookingNotification(booking, type, displayName) {
     const staffEmail = 'geordie.kingsbeer@gmail.com';
     const senderEmail = 'info@dineselect.co'; 
 
-    const subject = `[NEW BOOKING - ${type}] Table ${booking.table_id} on ${booking.date}`;
+    // Use the fetched display name in the subject and body
+    const subject = `[NEW BOOKING - ${type}] ${displayName}: Table ${booking.table_id}`;
+    
     const body = `
-        <p>A new <b>${type}</b> booking has been confirmed for <b>${booking.tenant_id}</b>!</p>
+        <p>A new <b>${type}</b> booking has been confirmed for <b>${displayName}</b> (ID: ${booking.tenant_id})!</p>
         <p><strong>Customer:</strong> ${booking.customer_name || 'Manual Admin Booking'}</p>
         <ul>
             <li><strong>Party Size:</strong> ${booking.party_size || 'N/A'}</li>
@@ -38,11 +59,6 @@ async function sendBookingNotification(booking, type) {
 }
 
 
-const SUPABASE_URL = 'https://Rrjvdabtqzkaomjuiref.supabase.co';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const _supaAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', 'https://book.dineselect.co');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -53,6 +69,10 @@ export default async function handler(req, res) {
 
     try {
         const { tableId, date, startTime, endTime, notes, tenantId, partySize } = req.body;
+        
+        // --- NEW STEP: Get Display Name ---
+        const tenantDisplayName = await getTenantDisplayName(tenantId);
+        // ------------------------------------
 
         if (!tableId || !date || !startTime || !endTime || !tenantId) {
             return res.status(400).json({ error: 'Missing required booking data.' });
@@ -93,7 +113,8 @@ export default async function handler(req, res) {
             party_size: booking.party_size
         };
         
-        await sendBookingNotification(adminBookingNotification, 'ADMIN MANUAL');
+        // --- NEW STEP: Pass Display Name to Email Function ---
+        await sendBookingNotification(adminBookingNotification, 'ADMIN MANUAL', tenantDisplayName);
 
         return res.status(200).json({
             message: 'Admin booking created and confirmed successfully.',
