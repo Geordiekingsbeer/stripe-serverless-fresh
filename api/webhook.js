@@ -24,7 +24,7 @@ async function getTenantDisplayName(tenantId) {
 
     if (error || !data) {
         console.error('Error fetching tenant display name:', error);
-        return tenantId; // Fallback to the ID
+        return tenantId;
     }
     return data.display_name;
 }
@@ -39,26 +39,25 @@ function cleanNotes(notes) {
     return cleanedNotes || 'Stripe Payment Confirmed (No additional notes)';
 }
 
-// --- NEW FUNCTION: CUSTOMER CONFIRMATION ---
+// --- NEW FUNCTION: CUSTOMER CONFIRMATION (Cleaned) ---
 async function sendCustomerConfirmation(booking, displayName) {
     const senderEmail = 'info@dineselect.co';
     const customerEmail = booking.customer_email;
-    const bookingDetailsUrl = 'https://book.dineselect.co/success.html?ref=' + booking.booking_ref; // Link to success page for details
 
-    const subject = `Your Table Reservation Confirmed at ${displayName}`;
+    const subject = `Your Premium Table Reservation Confirmed at ${displayName}`;
     const body = `
         <p>Dear ${booking.customer_name || 'Customer'},</p>
         <p>Your premium table reservation at <b>${displayName}</b> has been successfully confirmed and paid for.</p>
         <p><strong>Reservation Details:</strong></p>
         <ul>
-            <li><strong>Restaurant:</strong> ${displayName} (ID: ${booking.tenant_id})</li>
+            <li><strong>Restaurant:</strong> ${displayName}</li>
             <li><strong>Date:</strong> ${booking.date}</li>
             <li><strong>Time:</strong> ${booking.start_time.substring(0, 5)} - ${booking.end_time.substring(0, 5)}</li>
-            <li><strong>Table(s) Booked:</strong> ${booking.table_id}</li>
+            <li><strong>Table(s) Booked:</strong> ${booking.table_id} (e.g., 4, 8)</li>
             <li><strong>Party Size:</strong> ${booking.party_size || 'N/A'}</li>
             <li><strong>Amount Paid:</strong> £${(booking.total_pence / 100).toFixed(2)}</li>
         </ul>
-        <p>Your payment receipt has been sent separately by Stripe. Please contact us if you have any questions.</p>
+        <p>Your payment receipt has been sent separately by Stripe. Please contact us at <b>${senderEmail}</b> if you have any questions.</p>
         <p>Thank you!</p>
     `;
     
@@ -77,23 +76,26 @@ async function sendCustomerConfirmation(booking, displayName) {
     }
 }
 
-// --- UPDATED FUNCTION: STAFF NOTIFICATION ---
+// --- UPDATED FUNCTION: STAFF NOTIFICATION (Cleaned) ---
 async function sendBookingNotification(booking, type, displayName) {
     const staffEmail = 'geordie.kingsbeer@gmail.com';
     const senderEmail = 'info@dineselect.co'; 
-    const cleanedNotes = cleanNotes(booking.host_notes);
+    
+    // Ensure staff see the full Stripe ID for lookup
+    const fullHostNotes = booking.host_notes;
 
     const subject = `[NEW BOOKING - ${type}] ${displayName}: Table(s) ${booking.table_id}`;
     const body = `
-        <p>A new <b>${type}</b> booking has been confirmed for <b>${displayName}</b> (ID: ${booking.tenant_id})!</p>
+        <p>A new <b>${type}</b> booking has been confirmed for <b>${displayName}</b>.</p>
         <p><strong>Customer:</strong> ${booking.customer_name || 'N/A'}</p>
         <ul>
+            <li><strong>Tenant ID (Internal):</strong> ${booking.tenant_id}</li>
             <li><strong>Party Size:</strong> ${booking.party_size || 'N/A'}</li>
             <li><strong>Table ID(s):</strong> ${booking.table_id}</li>
             <li><strong>Date:</strong> ${booking.date}</li>
             <li><strong>Time:</strong> ${booking.start_time} - ${booking.end_time}</li>
             <li><strong>Source:</strong> ${type}</li>
-            <li><strong>Notes:</strong> ${cleanedNotes}</li>
+            <li><strong>Notes (Stripe Ref):</strong> ${fullHostNotes}</li>
             <li><strong>Customer Email:</strong> ${booking.customer_email || 'N/A'}</li>
         </ul>
     `;
@@ -105,10 +107,10 @@ async function sendBookingNotification(booking, type, displayName) {
             subject: subject,
             html: body,
         });
-        console.log(`Email Sent: Successfully notified ${staffEmail} via Resend.`);
+        console.log(`Email Sent: Successfully notified staff.`);
         return { success: true };
     } catch (error) {
-        console.error('Email Error: Failed to send notification via Resend:', error);
+        console.error('Email Error: Failed to send staff notification via Resend:', error);
         return { success: false, error: error.message };
     }
 }
@@ -178,7 +180,7 @@ export default async (req, res) => {
         const customerEmail = metadata.email || (session.customer_details ? session.customer_details.email : null);
         const receiveOffers = metadata.receive_offers;
         
-        // --- NEW: FETCH DISPLAY NAME ONCE ---
+        // Fetch Display Name once
         const tenantDisplayName = await getTenantDisplayName(metadata.tenant_id);
 
         const primaryBooking = {
@@ -191,8 +193,8 @@ export default async (req, res) => {
             customer_email: customerEmail,
             customer_name: metadata.customer_name || 'Customer',
             party_size: metadata.party_size || 'N/A',
-            total_pence: totalAmountPence, // Added for customer email
-            booking_ref: metadata.booking_ref, // Added for customer email
+            total_pence: totalAmountPence, 
+            booking_ref: metadata.booking_ref,
         };
 
         // 1. Insert into premium_slots (Transactional Booking Data)
@@ -213,12 +215,12 @@ export default async (req, res) => {
                     is_manual_booking: false,
                     receive_offers: (receiveOffers === 'TRUE'),
                     total_pence: totalAmountPence,
-                    customer_name: primaryBooking.customer_name, // Added customer name
+                    customer_name: primaryBooking.customer_name, 
                 });
             
             if (error) {
                 console.error(`[SUPABASE FAILURE] Insert error for table ${tableId}:`, error.message);
-                // Important: Don't stop the webhook process on a single table failure, but log it.
+                // Note: Leaving this commented to ensure single table errors don't stop the whole webhook process
             } else {
                 console.log(`[BOOKING SUCCESS] Table ${tableId} booked for ${metadata.booking_date}`);
             }
@@ -226,7 +228,7 @@ export default async (req, res) => {
         
         // 2. Send Notifications (Staff and Customer)
         await sendBookingNotification(primaryBooking, 'CUSTOMER PAID', tenantDisplayName);
-        await sendCustomerConfirmation(primaryBooking, tenantDisplayName); // <--- NEW: Send customer email
+        await sendCustomerConfirmation(primaryBooking, tenantDisplayName); 
 
         // 3. Insert into marketing_optins (Consent Data)
         if (receiveOffers === 'TRUE' && customerEmail) {
