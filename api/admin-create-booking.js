@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendBookingNotification(booking, type) {
     const staffEmail = 'geordie.kingsbeer@gmail.com';
-    const senderEmail = 'onboarding@resend.dev'; 
+    const senderEmail = 'info@dineselect.co'; 
 
     const subject = `[NEW BOOKING - ${type}] Table ${booking.table_id} on ${booking.date}`;
     const body = `
