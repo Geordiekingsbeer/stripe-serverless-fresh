@@ -39,7 +39,7 @@ function cleanNotes(notes) {
     return cleanedNotes || 'Stripe Payment Confirmed (No additional notes)';
 }
 
-// --- NEW FUNCTION: CUSTOMER CONFIRMATION (Cleaned) ---
+// --- UPDATED FUNCTION: CUSTOMER CONFIRMATION ---
 async function sendCustomerConfirmation(booking, displayName) {
     const senderEmail = 'info@dineselect.co';
     const customerEmail = booking.customer_email;
@@ -53,7 +53,7 @@ async function sendCustomerConfirmation(booking, displayName) {
             <li><strong>Restaurant:</strong> ${displayName}</li>
             <li><strong>Date:</strong> ${booking.date}</li>
             <li><strong>Time:</strong> ${booking.start_time.substring(0, 5)} - ${booking.end_time.substring(0, 5)}</li>
-            <li><strong>Table(s) Booked:</strong> ${booking.table_id} (e.g., 4, 8)</li>
+            <li><strong>Table Number(s):</strong> ${booking.table_id}</li>
             <li><strong>Party Size:</strong> ${booking.party_size || 'N/A'}</li>
             <li><strong>Amount Paid:</strong> £${(booking.total_pence / 100).toFixed(2)}</li>
         </ul>
@@ -76,26 +76,22 @@ async function sendCustomerConfirmation(booking, displayName) {
     }
 }
 
-// --- UPDATED FUNCTION: STAFF NOTIFICATION (Cleaned) ---
+// --- UPDATED FUNCTION: STAFF NOTIFICATION ---
 async function sendBookingNotification(booking, type, displayName) {
     const staffEmail = 'geordie.kingsbeer@gmail.com';
     const senderEmail = 'info@dineselect.co'; 
     
-    // Ensure staff see the full Stripe ID for lookup
-    const fullHostNotes = booking.host_notes;
-
     const subject = `[NEW BOOKING - ${type}] ${displayName}: Table(s) ${booking.table_id}`;
     const body = `
         <p>A new <b>${type}</b> booking has been confirmed for <b>${displayName}</b>.</p>
         <p><strong>Customer:</strong> ${booking.customer_name || 'N/A'}</p>
         <ul>
-            <li><strong>Tenant ID (Internal):</strong> ${booking.tenant_id}</li>
             <li><strong>Party Size:</strong> ${booking.party_size || 'N/A'}</li>
-            <li><strong>Table ID(s):</strong> ${booking.table_id}</li>
+            <li><strong>Table Number(s):</strong> ${booking.table_id}</li>
             <li><strong>Date:</strong> ${booking.date}</li>
             <li><strong>Time:</strong> ${booking.start_time} - ${booking.end_time}</li>
             <li><strong>Source:</strong> ${type}</li>
-            <li><strong>Notes (Stripe Ref):</strong> ${fullHostNotes}</li>
+            <li><strong>Stripe Order ID:</strong> ${booking.host_notes.replace('Stripe Order: ', '')}</li>
             <li><strong>Customer Email:</strong> ${booking.customer_email || 'N/A'}</li>
         </ul>
     `;
@@ -116,7 +112,7 @@ async function sendBookingNotification(booking, type, displayName) {
 }
 
 
-// --- MAIN WEBHOOK HANDLER ---
+// --- MAIN WEBHOOK HANDLER (No change to main logic) ---
 
 const getRawBody = (req) => {
     return new Promise((resolve) => {
