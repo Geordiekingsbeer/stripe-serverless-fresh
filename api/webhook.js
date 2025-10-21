@@ -17,7 +17,7 @@ function cleanNotes(notes) {
 
 async function sendBookingNotification(booking, type) {
     const staffEmail = 'geordie.kingsbeer@gmail.com';
-    const senderEmail = 'onboarding@resend.dev'; 
+    const senderEmail = 'info@dineselect.co'; 
     const cleanedNotes = cleanNotes(booking.host_notes);
 
     const subject = `[NEW BOOKING - ${type}] Table(s) ${booking.table_id} on ${booking.date}`;
