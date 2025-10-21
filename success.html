@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Booking Confirmed!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            padding: 50px; 
+            background: #f7f7f7;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 30px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 { 
+            color: #388e3c;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #555;
+            font-size: 16px;
+        }
+        /* The .icon and .confirmation-text styles are now implicitly handled or removed */
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Table Confirmed! 🍽️</h1>
+        
+        <p>Thank you for your payment. Your table reservation has been successfully booked for the selected date and time - See you soon!</p>
+        
+        </div>
+
+    <script>
+        // --- Supabase Setup (Must Match Your Project Keys) ---
+        const supabaseUrl = 'https://Rrjvdabtqzkaomjuiref.supabase.co';
+        const supabaseAnon = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyanZkYWJ0cXprYW9tanVpcmVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNDM3MzQsImV4cCI6MjA3NDcxOTczNH0.wAEeowZ8Yc8K54jAxEbY-8-mM0OGciMmyz6fJb9Z1Qg';
+        const _supa = supabase.createClient(supabaseUrl, supabaseAnon);
+        
+        // Function to log the payment success conversion
+        async function logPaymentSuccess() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tenantId = urlParams.get('tenant_id');
+            const bookingRef = urlParams.get('booking_ref');
+            
+            // Removed direct message element references, but keep console logging for debugging if needed
+            if (!tenantId || !bookingRef) {
+                console.error("Tracking Error: Missing tenant_id or booking_ref in success URL.");
+                return;
+            }
+
+            const trackingEvent = {
+                tenant_id: tenantId,
+                booking_ref: bookingRef,
+                checkout_completed: 'TRUE', 
+            };
+
+            const { error } = await _supa
+                .from('engagement_tracking')
+                .upsert([trackingEvent], { onConflict: 'booking_ref' });
+
+            if (error) {
+                if (error.code === '23505') {
+                    console.warn("Booking confirmation status already logged via webhook backup.");
+                } else {
+                    console.error('Tracking Insert Failure:', error);
+                }
+            } else {
+                console.log("Booking confirmation status successfully logged.");
+            }
+        }
+
+        // Run the logging function immediately when the page loads
+        document.addEventListener('DOMContentLoaded', logPaymentSuccess);
+    </script>
+</body>
+</html>
