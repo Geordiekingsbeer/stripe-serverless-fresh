@@ -9,7 +9,7 @@
         },
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://geordiekingsbeer.github.io"
+          "value": "https://geordiekingsbeer.github.io, http://book.dineselect.co, https://book.dineselect.co"
         },
         {
           "key": "Access-Control-Allow-Methods",
@@ -23,6 +23,7 @@
     }
   ],
   "rewrites": [
-    { "source": "/admin-booking", "destination": "/api/admin-create-booking" }
+    { "source": "/admin-booking", "destination": "/api/admin-create-booking" },
+    { "source": "/api/create-checkout", "destination": "/api/create-checkout" }
   ]
 }
