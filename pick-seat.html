@@ -164,7 +164,7 @@
 		/* --- Shared Green Button Style (Base) --- */
 		.green-action-btn{
 			margin-top:20px;
-			padding:12px 24px;
+			padding:12px 20px; /* REDUCED PADDING to 20px for narrower button */
 			font-size:16px;
 			background:#388e3c; /* Base Dark Green */
 			color:#fff;
@@ -223,10 +223,10 @@
 			margin: 10vh auto;
 		}
 		
-		/* NEW: Center the content in the modal, which will center the button */
+		/* Reset the text-align to left for cleaner general content look in the modal */
 		#party-prompt-modal .modal-content {
             margin: 30vh auto;
-            text-align: center; /* <<< THIS IS THE KEY FIX FOR CENTERING THE BUTTON */
+            text-align: left; /* Reset to left for general content */
         }
 		
 		.modal-content h3 { margin-top: 0; }
@@ -278,29 +278,22 @@
 
 		/* Adjust confirm-booking-btn to use the shared class styles */
 		#confirm-booking-btn {
-			padding: 12px 24px;
+			padding: 12px 20px; /* Reduced padding to match new standard */
 			border-radius: 20px;
 			width: 100%; 
 			max-width: 100%;
 			margin-top: 20px;
 		}
         
-		/* Party Prompt Modal Text Alignment and Button Sizing */
-        #party-prompt-modal p {
-			text-align: left; /* Keep descriptive text left-aligned */
-		}
-		/* Re-establish left alignment for the input field to look clean */
-		#party-prompt-modal input {
-			text-align: left !important; 
-		}
-
-		/* NEW: Button Sizing Fix */
+		/* FIX: Centering and Sizing for Party Size Button */
         #set-party-size {
-			/* Reset properties that conflict with content-width/centering in a text-align:center container */
-			margin: 15px auto 0 auto;
-			width: auto; 
-			display: inline-block; /* Treat it as an inline element for centering, but it respects padding */
-			max-width: none;
+			/* CRITICAL FIXES: Set fixed width and center using auto margins */
+			width: 250px; /* Set a specific, reasonable width */
+			margin: 15px auto 0 auto; 
+			display: block; /* Required for margin: auto to work */
+			max-width: 100%; /* Ensure it doesn't overflow the modal */
+			padding: 12px 20px; /* Inherit the reduced padding */
+			box-sizing: border-box; /* Include padding in the 250px width calculation */
 		}
 	</style>
 </head>
