@@ -215,23 +215,44 @@
 			box-sizing: border-box;
 		}
 
-        /* --- NEW STYLE FOR WARNING --- */
+        /* --- STYLING FIXES --- */
+        
+        /* Softer, yet prominent color for legal warning */
         .non-refundable-warning {
             font-size: 13px;
-            color: #d32f2f; /* Red color for warning */
+            color: #b93d00; /* Deep orange/red */
             font-weight: bold;
-            margin-top: -10px;
-            margin-bottom: 15px;
+            margin-top: 0;
+            margin-bottom: 20px;
             text-align: center;
-            padding: 5px 0;
-            border-top: 1px solid #ffdddd;
+            padding: 10px 10px;
+            border: 1px solid #ffccaa;
+            background-color: #fff9f6;
+            border-radius: 4px;
+        }
+
+        /* Fixes misalignment and layout for checkbox */
+        .optin-group {
+            margin-top: 15px; 
+            margin-bottom: 25px; 
+            text-align: left;
+            display: flex; /* Use flexbox for alignment */
+            align-items: flex-start; /* Align text to the top */
         }
 		
         #future-offers-optin {
             width: auto !important; 
-            margin: 0 10px 0 0 !important; 
-            display: inline-block !important; 
+            margin-right: 10px !important; 
+            margin-top: 2px; /* Slight push down to align with text */
+            flex-shrink: 0; /* Prevent checkbox from shrinking */
         }
+
+        .optin-group label {
+            font-size: 14px; 
+            font-weight: normal; 
+            color: #555;
+            line-height: 1.3;
+        }
 
 		#confirm-booking-btn {
 			background-color: #388e3c;
@@ -290,15 +311,15 @@
 				<input type="number" id="party-size-hidden" placeholder="Party Size (e.g., 4)" min="1" required>
 				<input type="email" id="customer-email" placeholder="Email for Receipt" required>
 
-                <div style="margin-top: 15px; margin-bottom: 20px; text-align: left;">
+                <div class="optin-group">
                     <input type="checkbox" id="future-offers-optin">
-                    <label for="future-offers-optin" style="font-size: 14px; font-weight: normal; color: #555;">
+                    <label for="future-offers-optin">
                         Yes, I would like to receive future offers and discounts from restaurants in my area.
                     </label>
                 </div>
 
                 <div class="non-refundable-warning">
-                    PLEASE NOTE: This is a NON-REFUNDABLE purchase to secure your chosen table.
+                    PLEASE NOTE: This is a **NON-REFUNDABLE** purchase to secure your chosen table.
                 </div>
                                 <button type="submit" id="confirm-booking-btn">Proceed to Payment</button>
 			</form>
