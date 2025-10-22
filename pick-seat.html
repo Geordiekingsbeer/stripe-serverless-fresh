@@ -36,7 +36,7 @@
 			border: none;
 			cursor: pointer;
 			color: #fff;
-			box-shadow: 0 1px 3px rgba(0,0,0,0.2); 
+			box-shadow: 0 1px 3px rgba(0,0,0,0.2); 
 		}
 
 		.admin-controls-top button#save {
@@ -50,7 +50,7 @@
 		}
 		
 		.admin-controls-top button:hover {
-			box-shadow: 0 2px 5px rgba(0,0,0,0.3); 
+			box-shadow: 0 2px 5px rgba(0,0,0,0.3); 
 			opacity: 0.95;
 		}
 
@@ -84,7 +84,7 @@
 			max-width: none;
 			font-weight: 500;
 			text-align: center;
-			font-family: Arial, sans-serif; 
+			font-family: Arial, sans-serif; 
 		}
 		
 		#load-bookings {
@@ -94,7 +94,7 @@
 			border: none;
 			border-radius: 4px;
 			cursor: pointer;
-			font-weight: 600; 
+			font-weight: 600; 
 			flex-grow: 1;
 			box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 			white-space: nowrap;
@@ -129,7 +129,7 @@
 			width: 90vw;
 			max-width: 480px;
 			text-align: center;
-			box-shadow: 0 1px 3px rgba(0,0,0,0.2); 
+			box-shadow: 0 1px 3px rgba(0,0,0,0.2); 
 		}
 		
 		#multi-select-toggle:hover, #multi-book-button:hover {
@@ -182,7 +182,7 @@
 			height: 15px;
 			border-radius: 3px;
 			margin-right: 5px;
-			border: 1px solid #000; 
+			border: 1px solid #000; 
 		}
 		
 		.modal {
@@ -266,7 +266,7 @@
 	</style>
 </head>
 <body>
-    <h3 id="restaurant-display-name" style="margin-bottom: 20px;">Admin Panel</h3>
+    <h3 id="restaurant-display-name" style="margin-bottom: 20px;">Admin Panel</h3>
 
 	<div class="admin-controls-top">
 		<button id="save">Save layout</button>
@@ -367,9 +367,13 @@
 		let isMultiSelectMode = false;
 		let selectedMultiTables = new Set();
 		
-		const CURRENT_TENANT_ID = 'R-VERIFIED-Z99'; 
-        const ADMIN_BOOKING_API_URL = 'https://stripe-serverless-fresh.vercel.app/admin-booking';
+		const CURRENT_TENANT_ID = 'R-VERIFIED-Z99'; 
+        const ADMIN_BOOKING_API_URL = 'https://stripe-serverless-fresh.vercel.app/admin-booking';
 
+        // NOTE: These variables are added to support the multi-select filtering logic
+        // We set a default party size for admin view to prevent filtering if party size isn't set.
+        let CURRENT_PARTY_SIZE = 4; 
+        const FILTERED_COLOR = '#cccccc';
 
 		const TABLE_COLOR = '#b7d7a8';
 		const BOOKED_COLOR = '#e0e0e0';
@@ -385,6 +389,26 @@
 		let currentSelectedTime = '';
 		let currentSelectedTableId = null;
 		const multiBookButton = document.getElementById('multi-book-button');
+
+        // NEW UTILITY FUNCTION: Get Table Capacity
+        function getTableCapacity(w, h) {
+            if (w === 30 && h === 30) return 2;
+            if ((w === 30 && h === 50) || (w === 50 && h === 30)) return 4;
+            if (w === 90 && h === 30) return 6;
+            return 0;
+        }
+
+        // NEW UTILITY FUNCTION: Get Selected Tables Capacity
+        function getSelectedTablesCapacity() {
+            let maxCapacity = 0;
+            selectedMultiTables.forEach(id => {
+                const table = tables.find(t => t.id === id);
+                if (table) {
+                    maxCapacity += getTableCapacity(table.w, table.h);
+                }
+            });
+            return maxCapacity;
+        }
 
 		function timeToMinutes(timeStr) {
 			const parts = timeStr.split(':').map(Number);
@@ -551,7 +575,7 @@
 			setInterval(() => {
 				if (document.getElementById('booking-date').value && document.getElementById('booking-time').value) {
 					console.log('Polling for new bookings...');
-					loadBookings(); 
+					loadBookings(); 
 				}
 			}, 10000);
 			console.log('Booking polling started (10s interval).');
@@ -571,7 +595,21 @@
 					const activeBooking = currentBookings.find(b =>	
 						Number(b.table_id) === tableIdNumber	
 					);
-					tableRect.fill(activeBooking ? BOOKED_COLOR : TABLE_COLOR);
+                    
+                    // --- NEW MULTI-SELECT FILTERING LOGIC START ---
+                    const tableCapacity = getTableCapacity(t.w, t.h);
+                    // Limit selection in multi-select to tables that don't individually exceed the party size buffer
+                    const capacityLimit = CURRENT_PARTY_SIZE > 0 ? CURRENT_PARTY_SIZE + 1 : 100;
+                    const isOverCapacityLimit = tableCapacity > capacityLimit;
+
+                    if (activeBooking) {
+                        tableRect.fill(BOOKED_COLOR);
+                    } else if (isMultiSelectMode && isOverCapacityLimit) {
+                        tableRect.fill(BOOKED_COLOR); // Use BOOKED_COLOR to gray it out
+                    } else {
+                        tableRect.fill(TABLE_COLOR);
+                    }
+                    // --- NEW MULTI-SELECT FILTERING LOGIC END ---
 				}
 				
 				if (isSelected) {
@@ -659,6 +697,14 @@
 				
 				if (isMultiSelectMode) {
 					const isBooked = group.getAttr('booking_data');
+                    const tableRect = group.findOne('.main-table');
+
+                    // Check if the table is visually filtered (grayed out) by the capacity rule
+                    if (tableRect.fill() === BOOKED_COLOR && !isBooked) {
+                        alert('Table is too large for current party size selection criteria.');
+                        return;
+                    }
+
 
 					if (selectedMultiTables.has(tableIdNumber)) {
 						selectedMultiTables.delete(tableIdNumber);
@@ -667,6 +713,19 @@
 							alert(`Table ${tableIdNumber} is already booked at this time. Please select an available table.`);
 							return;
 						}
+
+                        // --- NEW TOTAL CAPACITY CHECK START ---
+                        const currentTotalCapacity = getSelectedTablesCapacity();
+                        const tableCapacity = getTableCapacity(t.w, t.h);
+                        const newTotalCapacity = currentTotalCapacity + tableCapacity;
+                        const maxAllowedCapacity = CURRENT_PARTY_SIZE + 1; // Party size plus one spare seat
+
+                        if (CURRENT_PARTY_SIZE > 0 && newTotalCapacity > maxAllowedCapacity) {
+                            alert(`The total capacity of selected tables (${newTotalCapacity}) exceeds the maximum allowed for a party of ${CURRENT_PARTY_SIZE}. (Max allowed: ${maxAllowedCapacity})`);
+                            return;
+                        }
+                        // --- NEW TOTAL CAPACITY CHECK END ---
+
 						selectedMultiTables.add(tableIdNumber);
 					}
 					updateTableVisuals();
@@ -768,7 +827,7 @@
 
 				console.log('Admin Booking Successful:', result.message);
 				await loadBookings();
-				return true; 
+				return true; 
 				
 			} catch (error) {
 				alert('Network Error: Could not reach the booking service. Check console.');
@@ -783,7 +842,7 @@
 			let failedTables = [];
 
 			for (const tableId of tableIds) {
-				const success = await createBooking(tableId, startTime, endTime, notes); 
+				const success = await createBooking(tableId, startTime, endTime, notes); 
 				if (success) {
 					successfulBookings++;
 				} else {
@@ -797,7 +856,7 @@
 					message += ` Tables ${failedTables.join(', ')} failed due to overlaps or errors.`;
 				}
 				alert(message);
-				await loadBookings(); 
+				await loadBookings(); 
 			} else {
 				alert('Bulk booking failed. Check console for details.');
 			}
@@ -1033,6 +1092,3 @@
 	</script>
 </body>
 </html>
-
-
-
