@@ -223,6 +223,12 @@
 			margin: 10vh auto;
 		}
 		
+		/* NEW: Center the content in the modal, which will center the button */
+		#party-prompt-modal .modal-content {
+            margin: 30vh auto;
+            text-align: center; /* <<< THIS IS THE KEY FIX FOR CENTERING THE BUTTON */
+        }
+		
 		.modal-content h3 { margin-top: 0; }
 		.modal-content input {
 			width: 100%;
@@ -232,7 +238,7 @@
 			border-radius: 5px;
 			box-sizing: border-box;
 		}
-
+		
         /* --- FINAL MODAL STYLING FIXES --- */
         
         .non-refundable-warning {
@@ -279,20 +285,21 @@
 			margin-top: 20px;
 		}
         
-        /* New Modal for Party Size Prompt */
-        #party-prompt-modal .modal-content {
-            margin: 30vh auto;
-            text-align: left;
-        }
+		/* Party Prompt Modal Text Alignment and Button Sizing */
+        #party-prompt-modal p {
+			text-align: left; /* Keep descriptive text left-aligned */
+		}
+		/* Re-establish left alignment for the input field to look clean */
+		#party-prompt-modal input {
+			text-align: left !important; 
+		}
 
-		/* FIX: Ensure the button is content-width and centered in the modal */
+		/* NEW: Button Sizing Fix */
         #set-party-size {
-			/* Force width to fit content (text + padding) */
-			width: fit-content; 
-			/* Center the button horizontally in the modal */
-			margin: 15px auto 0 auto; 
-			/* Ensure it acts as a block element for centering */
-			display: block; 
+			/* Reset properties that conflict with content-width/centering in a text-align:center container */
+			margin: 15px auto 0 auto;
+			width: auto; 
+			display: inline-block; /* Treat it as an inline element for centering, but it respects padding */
 			max-width: none;
 		}
 	</style>
