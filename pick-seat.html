@@ -164,7 +164,7 @@
 		/* --- Shared Green Button Style (Base) --- */
 		.green-action-btn{
 			margin-top:20px;
-			padding:12px 15px; /* NARROWER PADDING for a smaller default button */
+			padding:12px 15px;
 			font-size:16px;
 			background:#388e3c; /* Base Dark Green */
 			color:#fff;
@@ -273,7 +273,7 @@
 
 		/* Adjust confirm-booking-btn (Proceed to Payment) for full width in the modal */
 		#confirm-booking-btn {
-			padding: 12px 15px; /* Use the narrow padding */
+			padding: 12px 15px;
 			border-radius: 20px;
 			width: 100%; 
 			max-width: 100%;
@@ -286,8 +286,8 @@
             margin: 30vh auto;
             text-align: left;
         }
-
-		/* Removed #set-party-size styles entirely for this test */
+        
+        /* Removed custom styling block for #set-party-size button */
 	</style>
 </head>
 <body>
@@ -340,7 +340,8 @@
 			<h3>How many people are in your party?</h3>
             <p style="margin-bottom: 20px;">Please enter your party size to view suitable tables.</p>
 			<input type="number" id="initial-party-size" placeholder="1 to 6+" min="1" required>
-			</div>
+			<button id="set-party-size">Continue to Seating Map</button>
+		</div>
 	</div>
 
 	<script src="https://js.stripe.com/v3/ "></script>
