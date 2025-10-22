@@ -249,21 +249,20 @@
             border-radius: 4px;
         }
 
-        /* --- FIX START: Opt-in Group Alignment --- */
+        /* FIX START: Opt-in Group Alignment */
         .optin-group {
             margin-bottom: 25px; 
             text-align: left;
             padding-top: 10px;
-            display: flex; /* Use Flexbox for alignment */
-            align-items: flex-start; /* Aligns checkbox and text to the top */
+            display: block; /* Reset to block for simpler float/inline management */
         }
 		
         #future-offers-optin {
+            /* Keep inline styling for sizing, but remove conflicting alignment */
             width: auto !important;
-            margin-right: 10px !important; 
-            /* Reset unnecessary vertical alignment rules */
-            vertical-align: initial; 
-            margin-top: 3px; /* Visual adjustment to align checkmark with text */
+            margin-right: 5px !important; /* Slightly reduced margin */
+            margin-top: 0; /* Align check box to the top line */
+            vertical-align: top; /* Align checkbox to top of text line */
         }
 
         .optin-group label {
@@ -271,11 +270,12 @@
             font-weight: normal; 
             color: #555;
             line-height: 1.3;
-            /* Reset unnecessary vertical alignment rules */
-            vertical-align: initial; 
+            /* Allow text to flow naturally */
+            display: inline;
+            vertical-align: top;
             width: initial;
         }
-        /* --- FIX END: Opt-in Group Alignment --- */
+        /* FIX END: Opt-in Group Alignment */
 
 
 		/* Adjust confirm-booking-btn (Proceed to Payment) for full width in the modal */
@@ -294,7 +294,8 @@
             text-align: left;
         }
 
-		/* FINAL FIX: Centering and Sizing for Party Size Button (Continue to Seating Map) */
+		/* CRITICAL FIX: Centering and Sizing for Party Size Button (Continue to Seating Map) */
+		/* RE-IMPLEMENTING the verified working styles */
         #set-party-size {
 			width: auto; 
 			display: block; 
