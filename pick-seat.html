@@ -630,19 +630,23 @@
 			if (STAFF_USE_TABLE_IDS.includes(tableId)) {
 				tableRect.fill(UNAVAILABLE_COLOR);
 			} else {
-                // 2. Check for Filter (Too Big/Small) OR Time Booked
-                const isFiltered = isTableTooBig(tableCapacity);
-                const isBooked = currentBookings.some(b => Number(b.table_id) === tableId);
-                
-                // If in Multi-Select Mode, ignore the 'isFiltered' state and show availability
-                if (isMultiSelectMode) {
-                    tableRect.fill(isBooked ? BOOKED_COLOR : TABLE_COLOR);
-                } else if (isFiltered) {
-                    tableRect.fill(FILTERED_COLOR);
-                } else {
-                    tableRect.fill(isBooked ? BOOKED_COLOR : TABLE_COLOR);
-                }
-			}
+               // 2. Check for Filter (Too Big/Small) OR Time Booked
+const isFiltered = isTableTooBig(tableCapacity);
+const isBooked = currentBookings.some(b => Number(b.table_id) === tableId);
+ 
+// Priority 1: Staff Use Tables (handled outside this block)
+// Priority 2: Party Size Filter
+if (isFiltered) {
+    tableRect.fill(FILTERED_COLOR);
+} 
+// Priority 3: Booked Status
+else if (isBooked) {
+    tableRect.fill(BOOKED_COLOR);
+} 
+// Priority 4: Available (regardless of multi-select status, the filter is now checked)
+else {
+    tableRect.fill(TABLE_COLOR);
+}
 			
 			// Reset stroke
 			tableRect.stroke('#000');	
