@@ -234,15 +234,15 @@
             margin-bottom: 25px; 
             text-align: left;
             padding-top: 10px;
-            /* Reset the default inline-block behavior */
-            display: block; 
+            display: flex; /* Use flexbox for horizontal alignment */
+            align-items: flex-start; /* Align items to the start (top) */
         }
 		
         #future-offers-optin {
             width: auto !important;
             margin-right: 10px !important; 
-            /* Using vertical-align middle for clean alignment */
-            vertical-align: middle; 
+            margin-top: 2px; /* Slight adjustment for visual alignment */
+            flex-shrink: 0; /* Prevent checkbox from shrinking */
         }
 
         .optin-group label {
@@ -250,10 +250,8 @@
             font-weight: normal; 
             color: #555;
             line-height: 1.3;
-            /* Using vertical-align middle for clean alignment */
-            vertical-align: middle; 
-            /* Set to initial width or inherit */
-            width: initial;
+            flex-grow: 1; /* Allow label to take remaining space */
+            max-width: calc(100% - 30px); /* Adjust based on checkbox width + margin */
         }
 
 		#confirm-booking-btn {
@@ -272,7 +270,7 @@
             text-align: left;
         }
         #party-prompt-modal button {
-            background-color: #1976d2;
+            background-color: #388e3c; /* Changed to match brand green */
             color: white;
             padding: 12px 20px;
             border: none;
@@ -280,6 +278,12 @@
 			cursor: pointer;
 			width: 100%;
 			margin-top: 15px;
+			font-size: 16px; /* Ensure consistent font size */
+            font-weight: bold; /* Make it bold */
+			box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Add subtle shadow for modern look */
+		}
+		#party-prompt-modal button:hover {
+			background-color: #2e7d32; /* Slightly darker green on hover */
 		}
 	</style>
 </head>
