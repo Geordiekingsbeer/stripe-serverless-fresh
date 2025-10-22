@@ -287,7 +287,14 @@
             text-align: left;
         }
         
-        /* Removed custom styling block for #set-party-size button */
+        /* The #set-party-size button also needs its own width/centering to correctly inherit green-action-btn's size behavior within the modal */
+        #set-party-size {
+            width: auto; /* Allow button to size to its content */
+            display: block; /* Make it a block element to center with margins */
+            margin: 15px auto 0 auto; /* Center horizontally with auto margins */
+            min-width: 180px; /* Ensure it's not too small */
+            max-width: 100%; /* Prevent it from overflowing its parent */
+        }
 	</style>
 </head>
 <body>
@@ -340,7 +347,7 @@
 			<h3>How many people are in your party?</h3>
             <p style="margin-bottom: 20px;">Please enter your party size to view suitable tables.</p>
 			<input type="number" id="initial-party-size" placeholder="1 to 6+" min="1" required>
-			<button id="set-party-size">Continue to Seating Map</button>
+			<button id="set-party-size" class="green-action-btn">Continue to Seating Map</button>
 		</div>
 	</div>
 
