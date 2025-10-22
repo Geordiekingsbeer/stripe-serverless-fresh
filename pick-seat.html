@@ -287,17 +287,7 @@
             text-align: left;
         }
 
-		/* CRITICAL FIX: Centering and Sizing for Party Size Button (Continue to Seating Map) */
-        #set-party-size {
-			/* CRITICAL: Overrides width: 90vw / max-width: 480px from .green-action-btn */
-			width: auto; 
-			/* CRITICAL: Must be block or table to use auto margins */
-			display: block; 
-			/* Centers the block element horizontally. */
-			margin: 15px auto 0 auto; 
-			min-width: 180px; /* Ensures it's not too tiny on mobile */
-			max-width: 100%;
-		}
+		/* Removed #set-party-size styles entirely for this test */
 	</style>
 </head>
 <body>
@@ -350,8 +340,7 @@
 			<h3>How many people are in your party?</h3>
             <p style="margin-bottom: 20px;">Please enter your party size to view suitable tables.</p>
 			<input type="number" id="initial-party-size" placeholder="1 to 6+" min="1" required>
-			<button id="set-party-size" class="green-action-btn">Continue to Seating Map</button>
-		</div>
+			</div>
 	</div>
 
 	<script src="https://js.stripe.com/v3/ "></script>
