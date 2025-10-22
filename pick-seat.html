@@ -634,15 +634,34 @@
                 const isFiltered = isTableTooBig(tableCapacity);
                 const isBooked = currentBookings.some(b => Number(b.table_id) === tableId);
                 
-                // If in Multi-Select Mode, ignore the 'isFiltered' state and show availability
-                if (isMultiSelectMode) {
-                    tableRect.fill(isBooked ? BOOKED_COLOR : TABLE_COLOR);
-                } else if (isFiltered) {
+                // 3. Apply Multi-Select Filtering if active
+if (isMultiSelectMode) {
+    // In Multi-Select, we only filter out tables that are too big
+    // We let them combine smaller tables, but we block a single table that is too much space.
+    const isTooBig = isTableTooBig(tableCapacity);
+
+    if (isBooked) {
+        tableRect.fill(BOOKED_COLOR);
+    } else if (isTooBig && tableCapacity > CURRENT_PARTY_SIZE) {
+        // Apply the filter color if it's too big and the capacity is > party size
+        tableRect.fill(FILTERED_COLOR);
+    } else {
+        tableRect.fill(TABLE_COLOR); // Available
+    }
+
+} else if (isFiltered) {
+
+	// 4. Multi-Select Dynamic Filter (Gray-out tables that push the combined capacity over the limit)
+            if (isMultiSelectMode && tableRect.fill() === TABLE_COLOR && selectedTableIds.length > 0) {
+                const combinedCapacity = getSelectedTablesCapacity();
+                const newCapacityIfAdded = combinedCapacity + tableCapacity;
+                const limit = CURRENT_PARTY_SIZE + 1;
+                
+                // Gray out available table if adding it would exceed the party size + 1 limit
+                if (newCapacityIfAdded > limit) {
                     tableRect.fill(FILTERED_COLOR);
-                } else {
-                    tableRect.fill(isBooked ? BOOKED_COLOR : TABLE_COLOR);
                 }
-			}
+            }
 			
 			// Reset stroke
 			tableRect.stroke('#000');	
@@ -831,8 +850,8 @@
 			return;
 		}
         // Check 2: Block if too big/small for party size
-        if (tableRect.fill() === FILTERED_COLOR) {
-			alert('Table unavailable.');
+        if (tableRect.fill() === FILTERED_COLOR) {
+			alert(`This table is outside the allowed size range for your party (${CURRENT_PARTY_SIZE}).`);
 			return;
 		}
         // Check 3: Block if already booked by time
@@ -868,12 +887,6 @@
                  alert("You cannot select tables that total more than a 6-person capacity unless you start Group Selection mode.");
                  return;
              }
-
-// NEW RULE: Multi-select capacity check: total seats combined must be <= party size + 1
-             if (isMultiSelectMode && newCapacity > CURRENT_PARTY_SIZE + 1) {
-                 alert(`The total capacity of the tables selected (${newCapacity}) cannot be more than 1 seat over your party size (${CURRENT_PARTY_SIZE}). Please deselect a table.`);
-                 return;
-             }
 			
              selectedTableIds.push(idNumber);
              tableRect.stroke(HIGHLIGHT_COLOR);
