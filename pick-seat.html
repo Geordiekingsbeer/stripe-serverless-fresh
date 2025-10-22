@@ -164,7 +164,7 @@
 		/* --- Shared Green Button Style (Base) --- */
 		.green-action-btn{
 			margin-top:20px;
-			padding:12px 15px; /* FURTHER REDUCED PADDING for smaller button */
+			padding:12px 15px; /* NARROWER PADDING for a smaller default button */
 			font-size:16px;
 			background:#388e3c; /* Base Dark Green */
 			color:#fff;
@@ -273,7 +273,7 @@
 
 		/* Adjust confirm-booking-btn (Proceed to Payment) for full width in the modal */
 		#confirm-booking-btn {
-			padding: 12px 20px; 
+			padding: 12px 15px; /* Use the narrow padding */
 			border-radius: 20px;
 			width: 100%; 
 			max-width: 100%;
@@ -289,15 +289,14 @@
 
 		/* CRITICAL FIX: Centering and Sizing for Party Size Button (Continue to Seating Map) */
         #set-party-size {
-			/* Set a specific, narrow width (Adjust this number if needed) */
-			width: 200px; 
-			/* CRITICAL: Center the block element horizontally */
-			margin: 15px auto 0 auto; 
-			/* Ensure it acts as a block for the margin: auto to work */
+			/* CRITICAL: Overrides width: 90vw / max-width: 480px from .green-action-btn */
+			width: auto; 
+			/* CRITICAL: Must be block or table to use auto margins */
 			display: block; 
-			max-width: 100%; 
-			/* Ensure padding is inside the 200px width */
-			box-sizing: border-box; 
+			/* Centers the block element horizontally. */
+			margin: 15px auto 0 auto; 
+			min-width: 180px; /* Ensures it's not too tiny on mobile */
+			max-width: 100%;
 		}
 	</style>
 </head>
@@ -833,7 +832,7 @@
 		}
         // Check 2: Block if too big/small for party size
         if (tableRect.fill() === FILTERED_COLOR) {
-            alert('Table unavailable.');
+			alert('Table unavailable.');
 			return;
 		}
         // Check 3: Block if already booked by time
