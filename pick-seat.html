@@ -164,7 +164,7 @@
 		/* --- Shared Green Button Style (Base) --- */
 		.green-action-btn{
 			margin-top:20px;
-			padding:12px 20px; /* NEW REDUCED PADDING */
+			padding:12px 20px;
 			font-size:16px;
 			background:#388e3c; /* Base Dark Green */
 			color:#fff;
@@ -178,6 +178,7 @@
 			text-align: center;
 			transition: background-color 0.2s ease;
 			font-weight: 600;
+			box-sizing: border-box;
 		}
 		
 		.green-action-btn:hover:not(:disabled) {
@@ -223,13 +224,7 @@
 			margin: 10vh auto;
 		}
 		
-		/* Ensure text content remains left-aligned */
-		#party-prompt-modal .modal-content {
-            margin: 30vh auto;
-            text-align: left;
-        }
-		
-		.modal-content h3 { margin-top: 0; }
+		/* Modal Content Inputs */
 		.modal-content input {
 			width: 100%;
 			padding: 10px;
@@ -276,26 +271,31 @@
             width: initial;
         }
 
-		/* Adjust confirm-booking-btn to use the shared class styles */
+		/* Styles for the 'Proceed to Payment' button (#confirm-booking-btn) */
 		#confirm-booking-btn {
-			padding: 12px 20px; 
+			padding: 12px 20px;
 			border-radius: 20px;
-			width: 100%; 
+			width: 100%; /* Full width of the modal content/form */
 			max-width: 100%;
 			margin-top: 20px;
+			display: block; /* Ensure it acts as a block element */
 		}
         
-		/* CRITICAL FIX: Centering and Sizing for Party Size Button */
+		/* New Modal for Party Size Prompt */
+		/* CRITICAL FIX: Ensure the container allows the button to fill its width and center correctly. */
+        #party-prompt-modal .modal-content {
+            margin: 30vh auto;
+            text-align: left; /* Keep text elements left-aligned for reading flow */
+        }
+
+		/* FIX: Ensure the party size button is full width (100%) and centered in the modal. */
         #set-party-size {
-			/* Force the button to shrink to its content + padding */
-			width: auto;
-			/* Use display: table to reliably enable margin: auto centering for content-width elements */
-			display: table; 
-			/* Center the content-width element */
-			margin: 15px auto 0 auto; 
+			/* CRITICAL FIXES: Overrides global green-action-btn rules for modal context */
+			width: 100%; /* Match the width of the input field above it */
+			margin: 15px 0 0 0; /* Remove auto-margins, align to left/right edges of modal content */
+			display: block; /* Required for width: 100% to work correctly */
 			max-width: 100%; 
-			padding: 12px 20px; /* Inherit the reduced padding from .green-action-btn */
-			box-sizing: content-box; /* Reset to default box model if needed */
+			padding: 12px 20px; /* Use the standard padding */
 		}
 	</style>
 </head>
