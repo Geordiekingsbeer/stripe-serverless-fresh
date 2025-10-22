@@ -164,7 +164,7 @@
 		/* --- Shared Green Button Style (Base) --- */
 		.green-action-btn{
 			margin-top:20px;
-			padding:12px 20px; /* REDUCED PADDING to 20px for narrower button */
+			padding:12px 20px; /* NEW REDUCED PADDING */
 			font-size:16px;
 			background:#388e3c; /* Base Dark Green */
 			color:#fff;
@@ -223,10 +223,10 @@
 			margin: 10vh auto;
 		}
 		
-		/* Reset the text-align to left for cleaner general content look in the modal */
+		/* Ensure text content remains left-aligned */
 		#party-prompt-modal .modal-content {
             margin: 30vh auto;
-            text-align: left; /* Reset to left for general content */
+            text-align: left;
         }
 		
 		.modal-content h3 { margin-top: 0; }
@@ -278,22 +278,24 @@
 
 		/* Adjust confirm-booking-btn to use the shared class styles */
 		#confirm-booking-btn {
-			padding: 12px 20px; /* Reduced padding to match new standard */
+			padding: 12px 20px; 
 			border-radius: 20px;
 			width: 100%; 
 			max-width: 100%;
 			margin-top: 20px;
 		}
         
-		/* FIX: Centering and Sizing for Party Size Button */
+		/* CRITICAL FIX: Centering and Sizing for Party Size Button */
         #set-party-size {
-			/* CRITICAL FIXES: Set fixed width and center using auto margins */
-			width: 250px; /* Set a specific, reasonable width */
+			/* Force the button to shrink to its content + padding */
+			width: auto;
+			/* Use display: table to reliably enable margin: auto centering for content-width elements */
+			display: table; 
+			/* Center the content-width element */
 			margin: 15px auto 0 auto; 
-			display: block; /* Required for margin: auto to work */
-			max-width: 100%; /* Ensure it doesn't overflow the modal */
-			padding: 12px 20px; /* Inherit the reduced padding */
-			box-sizing: border-box; /* Include padding in the 250px width calculation */
+			max-width: 100%; 
+			padding: 12px 20px; /* Inherit the reduced padding from .green-action-btn */
+			box-sizing: content-box; /* Reset to default box model if needed */
 		}
 	</style>
 </head>
