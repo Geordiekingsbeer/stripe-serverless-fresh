@@ -172,7 +172,7 @@
 			border-radius: 20px;
 			cursor:pointer;
 			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-			/* Set to a large width to work outside of modals */
+			/* These width properties apply to the main page button */
 			width: 90vw;
 			max-width: 480px;
 			text-align: center;
@@ -271,12 +271,11 @@
         }
 
 		/* Adjust confirm-booking-btn to use the shared class styles */
-		/* Ensure this stays wide as it's the final checkout button */
 		#confirm-booking-btn {
 			padding: 12px 24px;
 			border-radius: 20px;
-			width: 100%; /* Keep full width for checkout */
-			max-width: 100%; /* Ensure it respects modal width */
+			width: 100%; 
+			max-width: 100%;
 			margin-top: 20px;
 		}
         
@@ -286,14 +285,14 @@
             text-align: left;
         }
 
-		/* NEW STYLES: Center and make button fit text width */
+		/* FIX: Ensure the button is content-width and centered in the modal */
         #set-party-size {
-			/* Reset margin-top from .green-action-btn and center using auto */
-			margin: 15px auto 0 auto;
-			/* Override the main button display to allow for content-width sizing */
-			display: block;
-			/* Remove fixed width to allow sizing based on content + padding */
-			width: 75%;
+			/* Force width to fit content (text + padding) */
+			width: fit-content; 
+			/* Center the button horizontally in the modal */
+			margin: 15px auto 0 auto; 
+			/* Ensure it acts as a block element for centering */
+			display: block; 
 			max-width: none;
 		}
 	</style>
