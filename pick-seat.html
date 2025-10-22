@@ -226,23 +226,26 @@
             text-align: center;
             padding: 10px;
             border: 1px solid #ffccaa;
-            background-color: #fff9f6;
+            background-color: #fff9ff;
             border-radius: 4px;
         }
-
+        
         .optin-group {
+            /* This is the key change: Using margin-top to separate, and text-align to keep it left */
+            margin-top: 15px;
             margin-bottom: 25px; 
             text-align: left;
             padding-top: 10px;
-            display: flex; /* Use flexbox for horizontal alignment */
-            align-items: flex-start; /* Align items to the start (top) */
         }
 		
         #future-offers-optin {
+            /* Checkbox positioning and sizing */
             width: auto !important;
             margin-right: 10px !important; 
-            margin-top: 2px; /* Slight adjustment for visual alignment */
-            flex-shrink: 0; /* Prevent checkbox from shrinking */
+            margin-top: 0 !important;
+            margin-left: 0;
+            /* Align the checkbox vertically with the text */
+            vertical-align: middle; 
         }
 
         .optin-group label {
@@ -250,8 +253,10 @@
             font-weight: normal; 
             color: #555;
             line-height: 1.3;
-            flex-grow: 1; /* Allow label to take remaining space */
-            max-width: calc(100% - 30px); /* Adjust based on checkbox width + margin */
+            /* Allow the label to sit next to the checkbox */
+            display: inline-block;
+            vertical-align: middle;
+            max-width: calc(100% - 30px);
         }
 
 		#confirm-booking-btn {
@@ -268,9 +273,10 @@
         #party-prompt-modal .modal-content {
             margin: 30vh auto;
             text-align: left;
-        }
+		}
+        /* Style for the 'Continue to Seating Map' button, matching the main green aesthetic */
         #party-prompt-modal button {
-            background-color: #388e3c; /* Changed to match brand green */
+            background-color: #388e3c; 
             color: white;
             padding: 12px 20px;
             border: none;
@@ -278,12 +284,12 @@
 			cursor: pointer;
 			width: 100%;
 			margin-top: 15px;
-			font-size: 16px; /* Ensure consistent font size */
-            font-weight: bold; /* Make it bold */
-			box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Add subtle shadow for modern look */
+			font-size: 16px;
+            font-weight: bold;
+			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 		}
 		#party-prompt-modal button:hover {
-			background-color: #2e7d32; /* Slightly darker green on hover */
+			background-color: #2e7d32;
 		}
 	</style>
 </head>
