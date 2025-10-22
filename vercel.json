@@ -23,6 +23,11 @@
     }
   ],
   "rewrites": [
-    { "source": "/admin-booking", "destination": "/api/admin-create-booking" }
+    { "source": "/admin-booking", "destination": "/api/admin-create-booking" },
+    
+    { "source": "/pick-seat.html", "destination": "/pick-seat.html" },
+    { "source": "/admin.html", "destination": "/admin.html" },
+    { "source": "/success.html", "destination": "/success.html" },
+    { "source": "/reports.html", "destination": "/reports.html" }
   ]
 }
