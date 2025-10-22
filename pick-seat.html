@@ -634,15 +634,16 @@
                 const isFiltered = isTableTooBig(tableCapacity);
                 const isBooked = currentBookings.some(b => Number(b.table_id) === tableId);
                 
-                // Priority 1: Party Size Filter (Applies in all modes)
-                if (isFiltered) {
+                // FIX: Only apply the 'filtered' (gray) visual if we are in normal mode.
+                // In multi-select mode, we allow selection of small tables to combine them.
+                if (!isMultiSelectMode && isFiltered) {
                     tableRect.fill(FILTERED_COLOR);
                 } 
                 // Priority 2: Booked Status
                 else if (isBooked) {
                     tableRect.fill(BOOKED_COLOR);
                 } 
-                // Priority 3: Available
+                // Priority 3: Available (This will include small tables if in Multi-Select Mode)
                 else {
                     tableRect.fill(TABLE_COLOR);
                 }
@@ -744,7 +745,6 @@
 		
 		layer.draw();	
 		// Initial table visuals load must wait until after party size is set to apply filters.
-		// We call loadBookings only after party size is set.
 	}
 	
 	function drawTable(t) {
@@ -759,7 +759,7 @@
         // Determine table capacity once
         const tableCapacity = getTableCapacity(t.w, t.h);
         
-        // Set initial color based ONLY on staff status, NOT party size filtering
+        // Set initial color based ONLY on staff status. Filtering will be applied later in updateTableVisuals.
         let initialFill = STAFF_USE_TABLE_IDS.includes(t.id) ? UNAVAILABLE_COLOR : TABLE_COLOR;
 
 
@@ -826,7 +826,7 @@
 			alert('This table is reserved for staff walk-ins.');
 			return;
 		}
-        // Check 2: Block if too big/small for party size
+        // Check 2: Block if too big/small for party size (ONLY APPLIES IN NORMAL MODE)
         if (tableRect.fill() === FILTERED_COLOR) {
 			alert('Table unavailable.');
 			return;
@@ -846,6 +846,7 @@
         // FIX: Clear existing selection if NOT in multi-select mode and a new table is clicked.
         if (index === -1 && !isMulti) {
             stage.find('.main-table').forEach(rect => {
+                // Only un-stroke tables that are currently available (TABLE_COLOR)
                 if (rect.fill() === TABLE_COLOR) {
                     rect.stroke('#000');
                     rect.strokeWidth(1);
@@ -1086,7 +1087,6 @@
     logInitialClick(); 
 	setDefaultDateTime();
 	window.addEventListener('resize', resizeStage);
-	// We call loadTables first. It draws basic tables. loadBookings/updateTableVisuals will apply the filter later.
 	loadFloorplan(loadTables);
 	</script>
 </body>
