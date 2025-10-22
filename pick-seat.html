@@ -868,7 +868,13 @@
                  alert("You cannot select tables that total more than a 6-person capacity unless you start Group Selection mode.");
                  return;
              }
-             
+
+// NEW RULE: Multi-select capacity check: total seats combined must be <= party size + 1
+             if (isMultiSelectMode && newCapacity > CURRENT_PARTY_SIZE + 1) {
+                 alert(`The total capacity of the tables selected (${newCapacity}) cannot be more than 1 seat over your party size (${CURRENT_PARTY_SIZE}). Please deselect a table.`);
+                 return;
+             }
+			
              selectedTableIds.push(idNumber);
              tableRect.stroke(HIGHLIGHT_COLOR);
              tableRect.strokeWidth(3);
