@@ -445,24 +445,17 @@
         return maxCapacity;
     }
 
-// ------------------- EDITED FUNCTION -------------------
+// ------------------- EDITED FUNCTION: isTableTooBig -------------------
     function isTableTooBig(tableCapacity) {
         if (CURRENT_PARTY_SIZE === 0) return false;
         
-        // In single-select mode, restrict the table capacity to not exceed party size by more than 1,
-        // and enforce minimum capacity based on the party size bands.
-
-        // Rule 1: Too large (wasted space - capacity > party_size + 1)
-        // If the table is larger than the party size + 1, it's considered too big for single-select.
+        // Rule 1: Too large (wasted space - capacity > party_size + 1). 
+        // Note: This rule will not be active in multi-select mode as per updateTableVisuals logic.
         if (tableCapacity > CURRENT_PARTY_SIZE + 1) {
             return true;
         }
-
+        
         // Rule 2: Too small (cannot accommodate party size) - Enforce minimum bands
-        // Party 1-2: Min 2-seater (4- and 6-seaters are too big, handled by Rule 1)
-        // Party 3-4: Min 4-seater (2-seaters are too small)
-        // Party 5+: Min 6-seater (2- and 4-seaters are too small)
-
         if (CURRENT_PARTY_SIZE >= 3 && tableCapacity === 2) return true;
         if (CURRENT_PARTY_SIZE >= 5 && tableCapacity <= 4) return true;
         
@@ -832,7 +825,7 @@
 		return group;
 	}
 
-// ------------------- EDITED FUNCTION -------------------
+// ------------------- EDITED FUNCTION: selectTable -------------------
 	function selectTable(id, evt) {
 		const group = layer.findOne('#g-' + id);
 		const tableRect = group.findOne('.main-table');
@@ -876,13 +869,13 @@
              const newTableCapacity = getTableCapacity(tableDataMap.get(idNumber).w, tableDataMap.get(idNumber).h);
              const newCapacity = getSelectedTablesCapacity() + newTableCapacity;
              
-             // Enforce the rule: Total capacity cannot exceed party size + 1 in Multi-Select Mode.
+             // NEW MULTI-SELECT RULE: Total capacity cannot exceed party size + 1.
              if (isMultiSelectMode && newCapacity > CURRENT_PARTY_SIZE + 1) {
                 alert(`Cannot select this table. The total capacity of selected tables (${newCapacity}) would be more than one seat over your party size (${CURRENT_PARTY_SIZE}).`);
                 return;
              }
              
-             // Old Rule: Individual parties cannot select tables that total more than 6 capacity total unless using multi-select mode.
+             // Enforce the rule: Individual parties cannot select tables that total more than 6 capacity total unless using multi-select mode.
              if (newCapacity > 6 && !isMultiSelectMode) {
                  alert("You cannot select tables that total more than a 6-person capacity unless you start Group Selection mode.");
                  return;
@@ -1006,6 +999,7 @@
 		customerModal.style.display = 'flex';
 	};
 	
+// ------------------- EDITED FUNCTION: customerForm.addEventListener('submit') -------------------
 	customerForm.addEventListener('submit', async function(e) {
 		e.preventDefault();
 
@@ -1028,7 +1022,12 @@
         if (partySize <= 2) requiredMinCapacity = 2;
         else if (partySize <= 4) requiredMinCapacity = 4;
         else if (partySize <= 6) requiredMinCapacity = 6;
-        else requiredMinCapacity = partySize; // For larger parties in multi-select, minimum is party size.
+        else requiredMinCapacity = 6; // Max single table capacity, but for multi-select, minimum capacity check is needed below.
+
+        // If in multi-select mode, the required minimum capacity must be at least the party size.
+        if (isMultiSelectMode && partySize > requiredMinCapacity) {
+             requiredMinCapacity = partySize;
+        }
 
         // Check 1: Enforce Minimum Capacity in ALL MODES
         if (totalCapacity < requiredMinCapacity) {
@@ -1036,7 +1035,8 @@
              return;
         }
 
-        // Check 2: Max Capacity Check (Party size cannot exceed total selected table capacity)
+        // Check 2: Max Capacity Check (Total selected table capacity cannot exceed party size + 1)
+        // This is the core new rule, enforced at final checkout.
         if (totalCapacity > partySize + 1) {
              alert(`Error: The total capacity of your selected tables (${totalCapacity}) is more than one seat over your party size (${partySize}). Please adjust your table selection.`);
              return;
@@ -1084,6 +1084,7 @@
 			alert('Checkout creation failed. See console for details.');
 		}
 	});
+// ------------------- END EDITED FUNCTION -------------------
     
     // Party Size Prompt Handlers
     document.getElementById('set-party-size').onclick = () => {
