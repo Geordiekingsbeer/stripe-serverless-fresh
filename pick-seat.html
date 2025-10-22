@@ -164,7 +164,7 @@
 		/* --- Shared Green Button Style (Base) --- */
 		.green-action-btn{
 			margin-top:20px;
-			padding:12px 20px;
+			padding:12px 15px; /* FURTHER REDUCED PADDING for smaller button */
 			font-size:16px;
 			background:#388e3c; /* Base Dark Green */
 			color:#fff;
@@ -271,31 +271,33 @@
             width: initial;
         }
 
-		/* Styles for the 'Proceed to Payment' button (#confirm-booking-btn) */
+		/* Adjust confirm-booking-btn (Proceed to Payment) for full width in the modal */
 		#confirm-booking-btn {
-			padding: 12px 20px;
+			padding: 12px 20px; 
 			border-radius: 20px;
-			width: 100%; /* Full width of the modal content/form */
+			width: 100%; 
 			max-width: 100%;
 			margin-top: 20px;
-			display: block; /* Ensure it acts as a block element */
+			display: block;
 		}
         
 		/* New Modal for Party Size Prompt */
-		/* CRITICAL FIX: Ensure the container allows the button to fill its width and center correctly. */
-        #party-prompt-modal .modal-content {
+		#party-prompt-modal .modal-content {
             margin: 30vh auto;
-            text-align: left; /* Keep text elements left-aligned for reading flow */
+            text-align: left;
         }
 
-		/* FIX: Ensure the party size button is full width (100%) and centered in the modal. */
+		/* CRITICAL FIX: Centering and Sizing for Party Size Button (Continue to Seating Map) */
         #set-party-size {
-			/* CRITICAL FIXES: Overrides global green-action-btn rules for modal context */
-			width: 100%; /* Match the width of the input field above it */
-			margin: 15px 0 0 0; /* Remove auto-margins, align to left/right edges of modal content */
-			display: block; /* Required for width: 100% to work correctly */
+			/* Set a specific, narrow width (Adjust this number if needed) */
+			width: 200px; 
+			/* CRITICAL: Center the block element horizontally */
+			margin: 15px auto 0 auto; 
+			/* Ensure it acts as a block for the margin: auto to work */
+			display: block; 
 			max-width: 100%; 
-			padding: 12px 20px; /* Use the standard padding */
+			/* Ensure padding is inside the 200px width */
+			box-sizing: border-box; 
 		}
 	</style>
 </head>
