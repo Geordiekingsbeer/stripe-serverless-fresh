@@ -194,7 +194,7 @@
 
 		/* Apply the new shared style to payBtn */
 		#payBtn {
-			width: 90vw; 
+			width: 90vw; 
 			max-width: 480px;
 			margin-top: 20px;
 		}
@@ -234,70 +234,70 @@
 			box-sizing: border-box;
 		}
 		
-        /* --- FINAL MODAL STYLING FIXES --- */
-        
-        .non-refundable-warning {
-            font-size: 13px;
-            color: #b93d00;
-            font-weight: bold;
-            margin-top: 0;
-            margin-bottom: 20px;
-            text-align: center;
-            padding: 10px;
-            border: 1px solid #ffccaa;
-            background-color: #fff9f6;
-            border-radius: 4px;
-        }
+        /* --- FINAL MODAL STYLING FIXES --- */
+        
+        .non-refundable-warning {
+            font-size: 13px;
+            color: #b93d00;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #ffccaa;
+            background-color: #fff9f6;
+            border-radius: 4px;
+        }
 
-        .optin-group {
-    margin-bottom: 25px; 
-    text-align: left;
-    padding-top: 10px;
-    display: block; 
+        .optin-group {
+    margin-bottom: 25px; 
+    text-align: left;
+    padding-top: 10px;
+    display: block; 
 }
 	
 #future-offers-optin {
-    width: auto !important;
-    margin-right: 10px !important; 
-    vertical-align: middle; 
-    /* INCREASED THE DOWNWARD SHIFT TO 2px */
-    position: relative;
-    top: 6px; 
+    width: auto !important;
+    margin-right: 10px !important; 
+    vertical-align: middle; 
+    /* INCREASED THE DOWNWARD SHIFT TO 2px */
+    position: relative;
+    top: 6px; 
 }
 
 .optin-group label {
-    font-size: 14px; 
-    font-weight: normal; 
-    color: #555;
-    line-height: 1.3;
-    vertical-align: middle; 
-    width: initial;
+    font-size: 14px; 
+    font-weight: normal; 
+    color: #555;
+    line-height: 1.3;
+    vertical-align: middle; 
+    width: initial;
 }
 
 		/* Adjust confirm-booking-btn (Proceed to Payment) for full width in the modal */
 		#confirm-booking-btn {
 			padding: 12px 15px;
 			border-radius: 20px;
-			width: 100%; 
+			width: 100%; 
 			max-width: 100%;
 			margin-top: 20px;
 			display: block;
 		}
-        
+        
 		/* New Modal for Party Size Prompt */
 		#party-prompt-modal .modal-content {
-            margin: 30vh auto;
-            text-align: left;
-        }
-        
-        /* The #set-party-size button also needs its own width/centering to correctly inherit green-action-btn's size behavior within the modal */
-        #set-party-size {
-            width: auto; /* Allow button to size to its content */
-            display: block; /* Make it a block element to center with margins */
-            margin: 15px auto 0 auto; /* Center horizontally with auto margins */
-            min-width: 180px; /* Ensure it's not too small */
-            max-width: 100%; /* Prevent it from overflowing its parent */
-        }
+            margin: 30vh auto;
+            text-align: left;
+        }
+        
+		/* The #set-party-size button also needs its own width/centering to correctly inherit green-action-btn's size behavior within the modal */
+#set-party-size {
+	width: auto; /* Overrides the 90vw width from .green-action-btn */
+	display: block; /* Makes it a block element to center */
+	margin: 15px auto 0 auto; /* Centers horizontally and adds top margin */
+	min-width: 180px; /* Ensures a minimum size */
+	max-width: 100%; /* Prevents overflow */
+}
 	</style>
 </head>
 <body>
@@ -330,25 +330,25 @@
 				<input type="number" id="party-size-hidden" placeholder="Party Size (e.g., 4)" min="1" required>
 				<input type="email" id="customer-email" placeholder="Email for Receipt" required>
 
-                <div class="optin-group">
-                    <input type="checkbox" id="future-offers-optin">
-                    <label for="future-offers-optin">
-                        Yes, I would like to receive future offers and discounts from restaurants in my area.
-                    </label>
-                </div>
+                <div class="optin-group">
+                    <input type="checkbox" id="future-offers-optin">
+                    <label for="future-offers-optin">
+                        Yes, I would like to receive future offers and discounts from restaurants in my area.
+                    </label>
+                </div>
 
-                <div class="non-refundable-warning">
-                    PLEASE NOTE: This is a non-refundable purchase to secure your premium table.
-                </div>
-                <button type="submit" id="confirm-booking-btn" class="green-action-btn">Proceed to Payment</button>
+                <div class="non-refundable-warning">
+                    PLEASE NOTE: This is a non-refundable purchase to secure your premium table.
+                </div>
+                <button type="submit" id="confirm-booking-btn" class="green-action-btn">Proceed to Payment</button>
 			</form>
 		</div>
 	</div>
-    
+    
 	<div id="party-prompt-modal" class="modal" style="display: flex;">
 		<div class="modal-content">
 			<h3>How many people are in your party?</h3>
-            <p style="margin-bottom: 20px;">Please enter your party size to view suitable tables.</p>
+            <p style="margin-bottom: 20px;">Please enter your party size to view suitable tables.</p>
 			<input type="number" id="initial-party-size" placeholder="1 to 6+" min="1" required>
 			<button id="set-party-size" class="green-action-btn">Continue to Seating Map</button>
 		</div>
@@ -382,22 +382,22 @@
 	let currentBookings = [];	
 	let tableDataMap = new Map();	
 	let isMultiSelectMode = false;	
-    let selectedGroup = null; 
-    let selectedMultiTables = new Set(); 
-    const MULTI_BOOK_BUTTON = { style: { display: 'none' } };
-    
-    let CURRENT_PARTY_SIZE = 0;
-    const FILTERED_COLOR = '#cccccc';
+    let selectedGroup = null; 
+    let selectedMultiTables = new Set(); 
+    const MULTI_BOOK_BUTTON = { style: { display: 'none' } };
+    
+    let CURRENT_PARTY_SIZE = 0;
+    const FILTERED_COLOR = '#cccccc';
 
-    function generateUniqueId() {
-        return 'AUTO-' + Date.now().toString(36) + Math.random().toString(36).substring(2);
-    }
+    function generateUniqueId() {
+        return 'AUTO-' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+    }
 
-	let URL_PARAMS = {
-        tenant_id: null,
-        booking_ref: null,
-        source: null,
-    };
+    let URL_PARAMS = {
+        tenant_id: null,
+        booking_ref: null,
+        source: null,
+    };
 
 	const PRICE_2_SEATER = 499;	
 	const PRICE_4_SEATER = 999;	
@@ -411,45 +411,45 @@
 	
 	const STAFF_USE_TABLE_IDS = [10, 13, 12, 14, 1];
 	
-    function getTableCapacity(w, h) {
-        if (w === 30 && h === 30) return 2;
-        if ((w === 30 && h === 50) || (w === 50 && h === 30)) return 4;
-        if (w === 90 && h === 30) return 6;
-        return 0;
-    }
+    function getTableCapacity(w, h) {
+        if (w === 30 && h === 30) return 2;
+        if ((w === 30 && h === 50) || (w === 50 && h === 30)) return 4;
+        if (w === 90 && h === 30) return 6;
+        return 0;
+    }
 	
-    function getUrlParams() {
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        URL_PARAMS.tenant_id = urlParams.get('tenant_id');
-        URL_PARAMS.booking_ref = urlParams.get('booking_ref');
-        URL_PARAMS.source = urlParams.get('source');
+    function getUrlParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        URL_PARAMS.tenant_id = urlParams.get('tenant_id');
+        URL_PARAMS.booking_ref = urlParams.get('booking_ref');
+        URL_PARAMS.source = urlParams.get('source');
 
-        if (!URL_PARAMS.tenant_id) {
-             URL_PARAMS.tenant_id = 'R-VERIFIED-Z99';
-        }
-        
-        if (!URL_PARAMS.booking_ref) {
-             URL_PARAMS.booking_ref = generateUniqueId();
-        }
-    }
-    
-    function getSelectedTablesCapacity() {
-        let maxCapacity = 0;
-        selectedTableIds.forEach(id => {
-            const data = tableDataMap.get(id);
-            if (data) {
-                maxCapacity += getTableCapacity(data.w, data.h);
-            }
-        });
-        return maxCapacity;
-    }
+        if (!URL_PARAMS.tenant_id) {
+             URL_PARAMS.tenant_id = 'R-VERIFIED-Z99';
+        }
+        
+        if (!URL_PARAMS.booking_ref) {
+             URL_PARAMS.booking_ref = generateUniqueId();
+        }
+    }
+    
+    function getSelectedTablesCapacity() {
+        let maxCapacity = 0;
+        selectedTableIds.forEach(id => {
+            const data = tableDataMap.get(id);
+            if (data) {
+                maxCapacity += getTableCapacity(data.w, data.h);
+            }
+        });
+        return maxCapacity;
+    }
 
-    // Capacity checks for visual filtering
+    // RENAME/RE-FACTOR: Separate "too large" (wasted space) and "too small" (cannot fit) logic
     function isWastedCapacity(tableCapacity) {
         if (CURRENT_PARTY_SIZE === 0) return false;
         // Rule: Too large (wasted space) - applies if table is larger than necessary minimum
-        if (CURRENT_PARTY_SIZE <= 2 && tableCapacity > 2) return true; 
+        if (CURRENT_PARTY_SIZE <= 2 && tableCapacity > 2) return true; 
         if (CURRENT_PARTY_SIZE <= 4 && tableCapacity === 6) return true;
         return false;
     }
@@ -461,45 +461,36 @@
         if (CURRENT_PARTY_SIZE > 4 && tableCapacity === 4) return true;
         return false;
     }
-    
-    // Helper function to determine if the selected capacity is excessively wasteful (for real-time multi-select block and final checkout)
-    function isWastedCapacityAllowedForBooking(partySize, totalCapacity) {
-        if (partySize === 0) return false;
-        // Allows a buffer of 1 extra seat (e.g., party of 2 can book max 3 capacity)
-        const maxAllowedCapacity = partySize + 1; 
-        
-        return totalCapacity > maxAllowedCapacity;
-    }
 
 	async function logInitialClick() {
 		if (!URL_PARAMS.booking_ref) {
 			return;
 		}
 		
-        const { data: existingData } = await _supa
-            .from('engagement_tracking')
-            .select('view_link_count')
-            .eq('booking_ref', URL_PARAMS.booking_ref)
-            .maybeSingle();
+        const { data: existingData } = await _supa
+            .from('engagement_tracking')
+            .select('view_link_count')
+            .eq('booking_ref', URL_PARAMS.booking_ref)
+            .maybeSingle();
 
-        const currentCount = existingData ? existingData.view_link_count : 0;
-        const newCount = currentCount + 1;
+        const currentCount = existingData ? existingData.view_link_count : 0;
+        const newCount = currentCount + 1;
 
-        const trackingEvent = {
-            tenant_id: URL_PARAMS.tenant_id,
-            booking_ref: URL_PARAMS.booking_ref,
-            view_link_count: newCount,
-        };
+        const trackingEvent = {
+            tenant_id: URL_PARAMS.tenant_id,
+            booking_ref: URL_PARAMS.booking_ref,
+            view_link_count: newCount,
+        };
 
-        const { error: upsertError } = await _supa
-            .from('engagement_tracking')
-            .upsert([trackingEvent], { onConflict: 'booking_ref' });
+        const { error: upsertError } = await _supa
+            .from('engagement_tracking')
+            .upsert([trackingEvent], { onConflict: 'booking_ref' });
 
-        if (upsertError) {
-            console.error('Error logging initial link click:', upsertError);
-        } else {
-            console.log(`Tracking: Logged/Updated link_click for booking ${URL_PARAMS.booking_ref}. New Count: ${newCount}`);
-        }
+        if (upsertError) {
+            console.error('Error logging initial link click:', upsertError);
+        } else {
+            console.log(`Tracking: Logged/Updated link_click for booking ${URL_PARAMS.booking_ref}. New Count: ${newCount}`);
+        }
 	}
 
 
@@ -590,7 +581,7 @@
 	}
 
 	async function loadBookings() {
-        if (!URL_PARAMS.tenant_id) return false; 
+        if (!URL_PARAMS.tenant_id) return false; 
 
 		const selectedDateSupabase = document.getElementById('booking-date').value;
 		const selectedTime = document.getElementById('booking-time').value;
@@ -604,7 +595,7 @@
 		const { data, error } = await _supa
 			.from('premium_slots')	
 			.select('*')
-			.eq('date', selectedDateSupabase); 
+			.eq('date', selectedDateSupabase); 
 			
 		if(error){	
 			console.error('Error fetching bookings:', error);	
@@ -635,8 +626,8 @@
 			const group = tableRect.getParent();
 			const tableId = Number(group.id().substring(2));	
 			
-            const data = tableDataMap.get(tableId);
-            const tableCapacity = data ? getTableCapacity(data.w, data.h) : 0;
+            const data = tableDataMap.get(tableId);
+            const tableCapacity = data ? getTableCapacity(data.w, data.h) : 0;
 			
 			// 1. Check for Staff Use Only - This always overrides everything
 			if (STAFF_USE_TABLE_IDS.includes(tableId)) {
@@ -697,7 +688,7 @@
 	}
 	
 	async function loadTables() {
-        if (!URL_PARAMS.tenant_id) return false; 
+        if (!URL_PARAMS.tenant_id) return false; 
 
 		const baseTables = [
 			{ id: 1, x: 235, y: 110, w: 90, h: 30, rotation: 0 },
@@ -777,11 +768,11 @@
 		});
 		layer.add(group);
 
-        // Determine table capacity once
-        const tableCapacity = getTableCapacity(t.w, t.h);
-        
-        // Set initial color based ONLY on staff status. Filtering will be applied later in updateTableVisuals.
-        let initialFill = STAFF_USE_TABLE_IDS.includes(t.id) ? UNAVAILABLE_COLOR : TABLE_COLOR;
+        // Determine table capacity once
+        const tableCapacity = getTableCapacity(t.w, t.h);
+        
+        // Set initial color based ONLY on staff status. Filtering will be applied later in updateTableVisuals.
+        let initialFill = STAFF_USE_TABLE_IDS.includes(t.id) ? UNAVAILABLE_COLOR : TABLE_COLOR;
 
 
 		const tableRect = new Konva.Rect({	
@@ -791,7 +782,7 @@
 			stroke: '#000',	
 			strokeWidth: 1,
 			name: 'main-table',
-            table_capacity: tableCapacity
+            table_capacity: tableCapacity
 		});
 		group.add(tableRect);
 
@@ -847,12 +838,12 @@
 			alert('This table is reserved for staff walk-ins.');
 			return;
 		}
-        // Check 2: Block if filtered (too big/small/wasted capacity)
-        if (tableRect.fill() === FILTERED_COLOR) {
+        // Check 2: Block if filtered (too big/small/wasted capacity)
+        if (tableRect.fill() === FILTERED_COLOR) {
 			alert('Table unavailable.');
 			return;
 		}
-        // Check 3: Block if already booked by time
+        // Check 3: Block if already booked by time
 		if (tableRect.fill() === BOOKED_COLOR) {
 			alert('This table is already booked at this time.');
 			return;
@@ -863,25 +854,25 @@
 		
 		const isShiftPressed = evt && (evt.shiftKey || evt.ctrlKey || evt.metaKey);
 		const isMulti = isShiftPressed || isMultiSelectMode;
-        
-        // FIX: Clear existing selection if NOT in multi-select mode and a new table is clicked.
-        if (index === -1 && !isMulti) {
-            stage.find('.main-table').forEach(rect => {
-                // Only un-stroke tables that are currently available (TABLE_COLOR)
-                if (rect.fill() === TABLE_COLOR) {
-                    rect.stroke('#000');
-                    rect.strokeWidth(1);
-                }
-            });
-            selectedTableIds = [];
-        }
+        
+        // FIX: Clear existing selection if NOT in multi-select mode and a new table is clicked.
+        if (index === -1 && !isMulti) {
+            stage.find('.main-table').forEach(rect => {
+                // Only un-stroke tables that are currently available (TABLE_COLOR)
+                if (rect.fill() === TABLE_COLOR) {
+                    rect.stroke('#000');
+                    rect.strokeWidth(1);
+                }
+            });
+            selectedTableIds = [];
+        }
 
 
-        // Capacity check for adding tables (only runs if adding a table, index === -1)
-        if (index === -1) {
+        // Capacity check for adding tables (only runs if adding a table, index === -1)
+        if (index === -1) {
             const tableData = tableDataMap.get(idNumber);
             const tableCapacityToAdd = getTableCapacity(tableData.w, tableData.h);
-            const newCapacity = getSelectedTablesCapacity() + tableCapacityToAdd;
+            const newCapacity = getSelectedTablesCapacity() + tableCapacityToAdd;
             
             // --- CHECK: Real-time Multi-Select Buffer Check ---
             if (isMultiSelectMode && isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, newCapacity)) {
@@ -890,24 +881,24 @@
             }
             // --- END CHECK ---
             
-            // Enforce the rule: Individual parties cannot select more than 6 capacity total unless using multi-select mode.
-            if (newCapacity > 6 && !isMultiSelectMode) {
-                alert("You cannot select tables that total more than a 6-person capacity unless you start Group Selection mode.");
-                return;
-            }
-            
-            selectedTableIds.push(idNumber);
-            tableRect.stroke(HIGHLIGHT_COLOR);
-            tableRect.strokeWidth(3);
+            // Enforce the rule: Individual parties cannot select more than 6 capacity total unless using multi-select mode.
+            if (newCapacity > 6 && !isMultiSelectMode) {
+                alert("You cannot select tables that total more than a 6-person capacity unless you start Group Selection mode.");
+                return;
+            }
+             
+            selectedTableIds.push(idNumber);
+            tableRect.stroke(HIGHLIGHT_COLOR);
+            tableRect.strokeWidth(3);
 
-        } else {
-            // Remove table from selection
-            if (isMulti || selectedTableIds.length === 1) {
-                selectedTableIds.splice(index, 1);
-                tableRect.stroke('#000');
-                tableRect.strokeWidth(1);
-            }
-        }
+        } else {
+            // Remove table from selection
+            if (isMulti || selectedTableIds.length === 1) {
+                selectedTableIds.splice(index, 1);
+                tableRect.stroke('#000');
+                tableRect.strokeWidth(1);
+            }
+        }
 		
 		const totalPence = calculateTotalPence();
 		updatePayButton(totalPence);
@@ -915,6 +906,16 @@
 		layer.draw();
 	}
     
+    // Helper function to determine if the selected capacity is excessively wasteful
+    function isWastedCapacityAllowedForBooking(partySize, totalCapacity) {
+        if (partySize === 0) return false;
+        // FIX: Change max allowed buffer from +2 to +1.
+        // E.g., Party of 2 can reserve max (2 + 1) = 3 capacity.
+        // Two 2-seaters = 4 capacity. Since 4 > 3, it is blocked.
+        const maxAllowedCapacity = partySize + 1; 
+        
+        return totalCapacity > maxAllowedCapacity;
+    }
 
 	window.addEventListener('resize', resizeStage);
 
@@ -971,10 +972,10 @@
 	payBtn.onclick = async () => {
 		if (selectedTableIds.length === 0) return;
 		
-        // Set the hidden party size field for the checkout modal
-        document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
-        // Optionally update placeholder text in modal for clarity
-        document.getElementById('party-size-hidden').placeholder = `Party Size (${CURRENT_PARTY_SIZE})`;
+        // Set the hidden party size field for the checkout modal
+        document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
+        // Optionally update placeholder text in modal for clarity
+        document.getElementById('party-size-hidden').placeholder = `Party Size (${CURRENT_PARTY_SIZE})`;
 		
 		const selectedDate = document.getElementById('booking-date').value;
 		const selectedTime = document.getElementById('booking-time').value;
@@ -1005,15 +1006,15 @@
         }
 
 		if (URL_PARAMS.booking_ref) {
-            const trackingEvent = {
-                tenant_id: URL_PARAMS.tenant_id,
-                booking_ref: URL_PARAMS.booking_ref,
-                checkout_started: 'TRUE',
-            };
-            
-            const { error } = await _supa
-                .from('engagement_tracking')
-                .upsert([trackingEvent], { onConflict: 'booking_ref' }); 
+            const trackingEvent = {
+                tenant_id: URL_PARAMS.tenant_id,
+                booking_ref: URL_PARAMS.booking_ref,
+                checkout_started: 'TRUE',
+            };
+            
+            const { error } = await _supa
+                .from('engagement_tracking')
+                .upsert([trackingEvent], { onConflict: 'booking_ref' }); 
 
 			if (error) console.error('Tracking Error (Checkout Start):', error);
 		}
@@ -1024,19 +1025,19 @@
 	customerForm.addEventListener('submit', async function(e) {
 		e.preventDefault();
 
-        getUrlParams(); 
+        getUrlParams(); 
 
 		const customerName = document.getElementById('customer-name').value;
-		const partySize = parseInt(document.getElementById('party-size-hidden').value); 
+		const partySize = parseInt(document.getElementById('party-size-hidden').value); 
 		const email = document.getElementById('customer-email').value;
-        const receiveOffers = document.getElementById('future-offers-optin').checked;
+        const receiveOffers = document.getElementById('future-offers-optin').checked;
 
 		if (!customerName || isNaN(partySize) || partySize <= 0 || !email) {
 			alert('Please fill out all fields correctly.');
 			return;
 		}
 
-        const totalCapacity = getSelectedTablesCapacity();
+        const totalCapacity = getSelectedTablesCapacity();
         
         // Final Check 1: Check for EXCESSIVE capacity here before payment processing
         if (isWastedCapacityAllowedForBooking(partySize, totalCapacity)) {
@@ -1045,23 +1046,23 @@
         }
         
 
-        // Final Check 2: Enforce Minimum Capacity in ALL MODES
-        let requiredMinCapacity;
-        if (partySize <= 2) requiredMinCapacity = 2;
-        else if (partySize <= 4) requiredMinCapacity = 4;
-        else if (partySize <= 6) requiredMinCapacity = 6;
-        else requiredMinCapacity = 6; // Max single table capacity
+        // Final Check 2: Enforce Minimum Capacity in ALL MODES
+        let requiredMinCapacity;
+        if (partySize <= 2) requiredMinCapacity = 2;
+        else if (partySize <= 4) requiredMinCapacity = 4;
+        else if (partySize <= 6) requiredMinCapacity = 6;
+        else requiredMinCapacity = 6; // Max single table capacity
 
-        if (totalCapacity < requiredMinCapacity) {
-             alert(`Error: Your party of ${partySize} requires a minimum combined capacity of ${requiredMinCapacity}. Please select a larger table or combination of tables.`);
-             return;
-        }
+        if (totalCapacity < requiredMinCapacity) {
+             alert(`Error: Your party of ${partySize} requires a minimum combined capacity of ${requiredMinCapacity}. Please select a larger table or combination of tables.`);
+             return;
+        }
 
-        // Final Check 3: Max Capacity Check (Party size cannot exceed total selected table capacity)
-        if (partySize > totalCapacity) {
-             alert(`Error: Your party size (${partySize}) exceeds the total selected table capacity (${totalCapacity}).`);
-             return;
-        }
+        // Final Check 3: Max Capacity Check (Party size cannot exceed total selected table capacity)
+        if (partySize > totalCapacity) {
+             alert(`Error: Your party size (${partySize}) exceeds the total selected table capacity (${totalCapacity}).`);
+             return;
+        }
 
 		customerModal.style.display = 'none';	
 
@@ -1089,7 +1090,7 @@
 					party_size: partySize,
 					tenant_id: URL_PARAMS.tenant_id,
 					booking_ref: URL_PARAMS.booking_ref,
-                    receive_offers: receiveOffers
+                    receive_offers: receiveOffers
 				})
 			});
 			
@@ -1105,33 +1106,35 @@
 			alert('Checkout creation failed. See console for details.');
 		}
 	});
-    
-    // Party Size Prompt Handlers
-    document.getElementById('set-party-size').onclick = () => {
-        const inputElement = document.getElementById('initial-party-size');
-        const size = parseInt(inputElement.value);
-        
-        if (isNaN(size) || size < 1) {
-            alert("Please enter a valid party size (1 or greater).");
-            return;
-        }
-        
-        CURRENT_PARTY_SIZE = size;
-        document.getElementById('party-prompt-modal').style.display = 'none';
-        
-        const originalPartyInput = document.getElementById('party-size-hidden');
-        originalPartyInput.type = 'hidden'; 
+    
+    // Party Size Prompt Handlers
+    document.getElementById('set-party-size').onclick = () => {
+        const inputElement = document.getElementById('initial-party-size');
+        const size = parseInt(inputElement.value);
+        
+        if (isNaN(size) || size < 1) {
+            alert("Please enter a valid party size (1 or greater).");
+            return;
+        }
+        
+        CURRENT_PARTY_SIZE = size;
+        document.getElementById('party-prompt-modal').style.display = 'none';
+        
+        const originalPartyInput = document.getElementById('party-size-hidden');
+        originalPartyInput.type = 'hidden'; 
 
-        // Load bookings and update visuals after party size is set
-        loadBookings();
-    };
+        // Load bookings and update visuals after party size is set
+        loadBookings();
+    };
 
-    // Initialize the page by getting URL params and loading map data
-    getUrlParams();
-    logInitialClick(); 
+    // Initialize the page by getting URL params and loading map data
+    getUrlParams();
+    logInitialClick(); 
 	setDefaultDateTime();
 	window.addEventListener('resize', resizeStage);
 	loadFloorplan(loadTables);
 	</script>
 </body>
 </html>
+
+
