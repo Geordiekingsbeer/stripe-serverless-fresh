@@ -214,33 +214,15 @@
 		}
 
 		.modal-content {
-    background-color: #fefefe;
-    padding: 30px;
-    border: 1px solid #888;
-    width: 90%;	
-    max-width: 400px;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    margin: 10vh auto;
-    position: relative; /* ADDED: For close button positioning */
-}
-		/* Close button styling */
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    position: absolute; /* Positions relative to .modal-content */
-    top: 10px;
-    right: 15px;
-    cursor: pointer;
-}
-
-.close:hover,
-.close:focus {
-    color: #333;
-    text-decoration: none;
-}
+			background-color: #fefefe;
+			padding: 30px;
+			border: 1px solid #888;
+			width: 90%;	
+			max-width: 400px;
+			border-radius: 10px;
+			box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+			margin: 10vh auto;
+		}
 		
 		/* Modal Content Inputs */
 		.modal-content input {
@@ -341,9 +323,9 @@
 	<button id="payBtn" class="green-action-btn" disabled>Pay for 0 Tables – Stripe</button>
 
 	<div id="customer-modal" class="modal">
-	<div class="modal-content">
-        <span class="close">&times;</span> <h3>Confirm Reservation Details</h3>
-		<form id="customer-form">
+		<div class="modal-content">
+			<h3>Confirm Reservation Details</h3>
+			<form id="customer-form">
 				<input type="text" id="customer-name" placeholder="Full Name" required>
 				<input type="number" id="party-size-hidden" placeholder="Party Size (e.g., 4)" min="1" required>
 				<input type="email" id="customer-email" placeholder="Email for Receipt" required>
@@ -1039,18 +1021,7 @@
 
 		customerModal.style.display = 'flex';
 	};
-
-		// Close button listener for the customer modal
-const closeButton = customerModal.querySelector('.close');
-if (closeButton) {
-    closeButton.onclick = function() {
-        customerModal.style.display = 'none';
-    }
-}
-
-
-customerForm.addEventListener('submit', async function(e) {
-// ... rest of the code
+	
 	customerForm.addEventListener('submit', async function(e) {
 		e.preventDefault();
 
