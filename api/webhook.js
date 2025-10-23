@@ -152,7 +152,7 @@ export default async (req, res) => {
 
     if (selectError) {
         console.error('[IDEMPOTENCY FAILURE] Error checking existing event:', selectError.message);
-        // Continue processing to avoid infinite retries from Stripe, but log the error
+        // Continue processing but log error
     } else if (existingEvent) {
         console.log(`[IDEMPOTENCY] Event ${eventId} already processed.`);
         return res.status(200).json({ received: true });
@@ -166,8 +166,32 @@ export default async (req, res) => {
 
         if (!metadata || !metadata.table_ids) {
             console.error('[BOOKING FAILURE] Missing metadata for booking in session:', session.id);
-            return res.status(400).end();
+            // Return 400 as this indicates a fault in the checkout generation process
+            return res.status(400).end(); 
         }
+
+        // 2. CRITICAL FIX: LOG THE EVENT IMMEDIATELY (Required by your NOT NULL schema)
+        // If this fails, the DB is unreachable or permissions are bad.
+        const { error: insertEventError } = await supabase
+            .from('webhook_events')
+            .insert({
+                stripe_event_id: eventId,
+                event_type: event.type,
+                // Assuming you have 'tenant_id' and 'status' columns that are NOT NULL 
+                // in webhook_events, we pull them from metadata/defaults.
+                tenant_id: metadata.tenant_id, 
+                status: 'processing',
+                host_notes: `Ref: ${metadata.booking_ref}`,
+            });
+
+        if (insertEventError) {
+            console.error('[WEBHOOK_EVENTS FAILURE] CRITICAL: Failed to log new event:', insertEventError.message);
+            // If we can't log the event, we return 500 to signal Stripe to retry.
+            return res.status(500).send(`Database Error: Could not log event ${eventId}`); 
+        } else {
+            console.log('[WEBHOOK_EVENTS SUCCESS] Event logged as processing.');
+        }
+
 
         const totalAmountPence = session.amount_total;
         const tableIds = metadata.table_ids.split(',');
@@ -205,24 +229,6 @@ export default async (req, res) => {
             booking_ref: metadata.booking_ref,
         };
         
-        // 2. LOG THE EVENT (FIX) - Do this immediately after the metadata is confirmed
-        const { error: insertEventError } = await supabase
-            .from('webhook_events')
-            .insert({
-                stripe_event_id: eventId,
-                event_type: event.type,
-                tenant_id: metadata.tenant_id,
-                status: 'processing',
-                host_notes: `Ref: ${metadata.booking_ref}`,
-            });
-
-        if (insertEventError) {
-            console.error('[WEBHOOK_EVENTS FAILURE] Failed to log new event:', insertEventError.message);
-        } else {
-            console.log('[WEBHOOK_EVENTS SUCCESS] Event logged as processing.');
-        }
-
-
         // 3. Insert into premium_slots (CRITICAL BOOKING DATA)
         for (const tableId of tableIds) {
             const { error } = await supabase
@@ -246,7 +252,7 @@ export default async (req, res) => {
             
             if (error) {
                 console.error(`[PREMIUM_SLOTS FAILURE] Insert error for table ${tableId}:`, error.message);
-                // CRITICAL: Ensure this error is logged so you can debug the specific table/column failure
+                // CRITICAL: This log is now reachable. Check Vercel logs if rows are not inserted.
             } else {
                 console.log(`[BOOKING SUCCESS] Table ${tableId} booked for ${metadata.booking_date}`);
             }
