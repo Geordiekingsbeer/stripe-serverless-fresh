@@ -870,17 +870,26 @@
 
         // Capacity check for adding tables (only runs if adding a table, index === -1)
         if (index === -1) {
-             const newCapacity = getSelectedTablesCapacity() + getTableCapacity(tableDataMap.get(idNumber).w, tableDataMap.get(idNumber).h);
+            const tableData = tableDataMap.get(idNumber);
+            const tableCapacityToAdd = getTableCapacity(tableData.w, tableData.h);
+            const newCapacity = getSelectedTablesCapacity() + tableCapacityToAdd;
+            
+            // --- NEW: Real-time Multi-Select Buffer Check ---
+            if (isMultiSelectMode && isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, newCapacity)) {
+                alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${getSelectedTablesCapacity()}.`);
+                return;
+            }
+            // --- END NEW CHECK ---
+            
+            // Enforce the rule: Individual parties cannot select more than 6 capacity total unless using multi-select mode.
+            if (newCapacity > 6 && !isMultiSelectMode) {
+                alert("You cannot select tables that total more than a 6-person capacity unless you start Group Selection mode.");
+                return;
+            }
              
-             // Enforce the rule: Individual parties cannot select more than 6 capacity total unless using multi-select mode.
-             if (newCapacity > 6 && !isMultiSelectMode) {
-                 alert("You cannot select tables that total more than a 6-person capacity unless you start Group Selection mode.");
-                 return;
-             }
-             
-             selectedTableIds.push(idNumber);
-             tableRect.stroke(HIGHLIGHT_COLOR);
-             tableRect.strokeWidth(3);
+            selectedTableIds.push(idNumber);
+            tableRect.stroke(HIGHLIGHT_COLOR);
+            tableRect.strokeWidth(3);
 
         } else {
             // Remove table from selection
@@ -900,9 +909,8 @@
     // Helper function to determine if the selected capacity is excessively wasteful
     function isWastedCapacityAllowedForBooking(partySize, totalCapacity) {
         if (partySize === 0) return false;
-        // Allow a slight buffer (e.g., party of 2 can book up to 4 capacity).
+        // Allow a slight buffer of 2 extra seats (e.g., party of 2 can book up to 4 capacity).
         // If the total capacity exceeds the party size by more than 2, block it.
-        // You can adjust '2' based on business rules.
         const maxAllowedCapacity = partySize + 2; 
         
         return totalCapacity > maxAllowedCapacity;
@@ -989,7 +997,7 @@
 			return;
 		}
         
-        // NEW: Check for EXCESSIVE capacity in multi-select mode
+        // Final Check for EXCESSIVE capacity before opening the payment modal
         const totalCapacity = getSelectedTablesCapacity();
         if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
             alert(`Error: Your party of ${CURRENT_PARTY_SIZE} cannot reserve tables with a combined capacity of ${totalCapacity}. Please reduce the number of selected tables.`);
@@ -1030,27 +1038,26 @@
 
         const totalCapacity = getSelectedTablesCapacity();
         
-        // Re-check for EXCESSIVE capacity here before payment processing
+        // Re-check 1: Check for EXCESSIVE capacity here before payment processing
         if (isWastedCapacityAllowedForBooking(partySize, totalCapacity)) {
             alert(`Error: Your party of ${partySize} cannot reserve tables with a combined capacity of ${totalCapacity}. Please reduce the number of selected tables.`);
             return;
         }
         
 
-        // Determine the smallest capacity required to seat this party
+        // Re-check 2: Enforce Minimum Capacity in ALL MODES
         let requiredMinCapacity;
         if (partySize <= 2) requiredMinCapacity = 2;
         else if (partySize <= 4) requiredMinCapacity = 4;
         else if (partySize <= 6) requiredMinCapacity = 6;
         else requiredMinCapacity = 6; // Max single table capacity
 
-        // Check 1: Enforce Minimum Capacity in ALL MODES
         if (totalCapacity < requiredMinCapacity) {
              alert(`Error: Your party of ${partySize} requires a minimum combined capacity of ${requiredMinCapacity}. Please select a larger table or combination of tables.`);
              return;
         }
 
-        // Check 2: Max Capacity Check (Party size cannot exceed total selected table capacity)
+        // Re-check 3: Max Capacity Check (Party size cannot exceed total selected table capacity)
         if (partySize > totalCapacity) {
              alert(`Error: Your party size (${partySize}) exceeds the total selected table capacity (${totalCapacity}).`);
              return;
