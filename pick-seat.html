@@ -445,19 +445,22 @@
         return maxCapacity;
     }
 
-    function isTableTooBig(tableCapacity) {
-        if (CURRENT_PARTY_SIZE === 0) return false;
-        
-        // Rule 1: Too large (wasted space)
-        if (CURRENT_PARTY_SIZE <= 2 && tableCapacity > 2) return true; 
-        if (CURRENT_PARTY_SIZE <= 4 && tableCapacity === 6) return true;
-        
-        // Rule 2: Too small (cannot accommodate party size)
-        if (CURRENT_PARTY_SIZE > 2 && tableCapacity === 2) return true;
-        if (CURRENT_PARTY_SIZE > 4 && tableCapacity === 4) return true;
-        
-        return false;
-    }
+    // RENAME/RE-FACTOR: Separate "too large" (wasted space) and "too small" (cannot fit) logic
+    function isWastedCapacity(tableCapacity) {
+        if (CURRENT_PARTY_SIZE === 0) return false;
+        // Rule: Too large (wasted space)
+        if (CURRENT_PARTY_SIZE <= 2 && tableCapacity > 2) return true; 
+        if (CURRENT_PARTY_SIZE <= 4 && tableCapacity === 6) return true;
+        return false;
+    }
+
+    function isTooSmall(tableCapacity) {
+        if (CURRENT_PARTY_SIZE === 0) return false;
+        // Rule: Too small (cannot accommodate party size)
+        if (CURRENT_PARTY_SIZE > 2 && tableCapacity === 2) return true;
+        if (CURRENT_PARTY_SIZE > 4 && tableCapacity === 4) return true;
+        return false;
+    }
 
 	async function logInitialClick() {
 		if (!URL_PARAMS.booking_ref) {
@@ -631,19 +634,29 @@
 				tableRect.fill(UNAVAILABLE_COLOR);
 			} else {
                 // 2. Determine Filter/Booked Status
-                const isFiltered = isTableTooBig(tableCapacity);
+                const wastedCapacity = isWastedCapacity(tableCapacity);
+                const tooSmall = isTooSmall(tableCapacity);
                 const isBooked = currentBookings.some(b => Number(b.table_id) === tableId);
                 
-                // FIX: Only apply the 'filtered' (gray) visual if we are in normal mode.
-                // In multi-select mode, we allow selection of small tables to combine them.
-                if (!isMultiSelectMode && isFiltered) {
+                let isFiltered = false;
+
+                // Rule A: ALWAYS filter out tables that are too large (wasted capacity)
+                if (wastedCapacity) {
+                    isFiltered = true;
+                } 
+                // Rule B: ONLY filter out tables that are too small if we are NOT in Multi-Select Mode
+                else if (!isMultiSelectMode && tooSmall) {
+                    isFiltered = true;
+                }
+
+                if (isFiltered) {
                     tableRect.fill(FILTERED_COLOR);
                 } 
                 // Priority 2: Booked Status
                 else if (isBooked) {
                     tableRect.fill(BOOKED_COLOR);
                 } 
-                // Priority 3: Available (This will include small tables if in Multi-Select Mode)
+                // Priority 3: Available
                 else {
                     tableRect.fill(TABLE_COLOR);
                 }
@@ -744,7 +757,6 @@
 		});
 		
 		layer.draw();	
-		// Initial table visuals load must wait until after party size is set to apply filters.
 	}
 	
 	function drawTable(t) {
@@ -826,7 +838,7 @@
 			alert('This table is reserved for staff walk-ins.');
 			return;
 		}
-        // Check 2: Block if too big/small for party size (ONLY APPLIES IN NORMAL MODE)
+        // Check 2: Block if filtered (too big/small/wasted capacity)
         if (tableRect.fill() === FILTERED_COLOR) {
 			alert('Table unavailable.');
 			return;
