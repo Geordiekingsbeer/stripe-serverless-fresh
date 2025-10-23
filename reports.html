@@ -1,320 +1,321 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8"/>
-    <title>KPI Reporting Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f7f7f7;
-            padding: 20px;
-            color: #333;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        h2 {
-            border-bottom: 2px solid #ddd;
-            padding-bottom: 10px;
-            margin-top: 30px;
-            color: #1976d2;
-        }
-        .kpi-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            background: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .kpi-table th, .kpi-table td {
-            border: 1px solid #eee;
-            padding: 12px 15px;
-            text-align: left;
-        }
-        .kpi-table th {
-            background-color: #eef;
-            font-weight: 600;
-        }
-        .kpi-table td:last-child {
-            font-weight: bold;
-        }
-        .trend-up { color: #388e3c; }
-        .trend-down { color: #d32f2f; }
-        .trend-flat { color: #555; }
-        #status {
-            padding: 15px;
-            background-color: #ffcc80;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-    </style>
+    <meta charset="utf-8"/>
+    <title>KPI Reporting Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f7f7f7;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h2 {
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+            margin-top: 30px;
+            color: #1976d2;
+        }
+        .kpi-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .kpi-table th, .kpi-table td {
+            border: 1px solid #eee;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        .kpi-table th {
+            background-color: #eef;
+            font-weight: 600;
+        }
+        .kpi-table td:last-child {
+            font-weight: bold;
+        }
+        .trend-up { color: #388e3c; }
+        .trend-down { color: #d32f2f; }
+        .trend-flat { color: #555; }
+        #status {
+            padding: 15px;
+            background-color: #ffcc80;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Pricing & Reporting Dashboard</h1>
-        <div id="status">Loading data...</div>
+    <div class="container">
+        <h1>Pricing & Reporting Dashboard</h1>
+        <div id="status">Loading data...</div>
 
-        <div id="funnel-report">
-            <h2>1. Financial & Trend Analysis (70% Profit Share)</h2>
-            <table class="kpi-table">
-                <thead>
-                    <tr>
-                        <th>Metric</th>
-                        <th>Value</th>
-                        <th>Trend (vs. Last Month)</th>
-                    </tr>
-                </thead>
-                <tbody id="funnel-body">
-                    <tr><td>Total Monthly Profit (70% Share)</td><td id="kpi-total-profit"></td><td><span id="kpi-profit-trend"></span></td></tr>
-                    <tr><td>Average Booking Value (70% Share)</td><td id="kpi-avg-value"></td><td><span id="kpi-avg-value-trend"></span></td></tr>
-                    <tr><td>Total People Viewed Link</td><td id="kpi-link-opened"></td><td><span id="kpi-view-trend"></span></td></tr>
-                    <tr><td>Total Paid Bookings</td><td id="kpi-paid"></td><td><span id="kpi-paid-trend"></span></td></tr>
-                    <tr><td>Conversion Rate (Paid / Viewed)</td><td id="kpi-rate"></td><td></td></tr>
-                </tbody>
-            </table>
-        </div>
+        <div id="funnel-report">
+            <h2>1. Financial & Trend Analysis (70% Profit Share)</h2>
+            <table class="kpi-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                        <th>Trend (vs. Last Month)</th>
+                    </tr>
+                </thead>
+                <tbody id="funnel-body">
+                    <tr><td>Total Monthly Profit (70% Share)</td><td id="kpi-total-profit"></td><td><span id="kpi-profit-trend"></span></td></tr>
+                    <tr><td>Average Booking Value (70% Share)</td><td id="kpi-avg-value"></td><td><span id="kpi-avg-value-trend"></span></td></tr>
+                    <tr><td>Total People Viewed Link</td><td id="kpi-link-opened"></td><td><span id="kpi-view-trend"></span></td></tr>
+                    <tr><td>Total Paid Bookings</td><td id="kpi-paid"></td><td><span id="kpi-paid-trend"></span></td></tr>
+                    <tr><td>Conversion Rate (Paid / Viewed)</td><td id="kpi-rate"></td><td></td></tr>
+                </tbody>
+            </table>
+        </div>
 
-        <div id="daily-report">
-            <h2>2. Average Profit Per Day (70% Share)</h2>
-            <table class="kpi-table">
-                <thead>
-                    <tr>
-                        <th>Day of Week</th>
-                    </tr>
-                </thead>
-                <tbody id="daily-profit-body">
-                    </tbody>
-            </table>
-        </div>
+        <div id="daily-report">
+            <h2>2. Average Profit Per Day (70% Share)</h2>
+            <table class="kpi-table">
+                <thead>
+                    <tr>
+                        <th>Day of Week</th>
+                        <th>Average Profit Per Day</th>
+                    </tr>
+                </thead>
+                <tbody id="daily-profit-body">
+                    </tbody>
+            </table>
+        </div>
 
-        <div id="table-report">
-            <h2>3. Table Demand Breakdown</h2>
-            <table class="kpi-table">
-                <thead>
-                    <tr>
-                        <th>Table Size</th>
-                        <th>Booked Count (Paid)</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body">
-                    <tr><td>2-Seaters Booked</td><td id="kpi-2-seat"></td></tr>
-                    <tr><td>4-Seaters Booked</td><td id="kpi-4-seat"></td></tr>
-                    <tr><td>6-Seaters Booked</td><td id="kpi-6-seat"></td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+        <div id="table-report">
+            <h2>3. Table Demand Breakdown</h2>
+            <table class="kpi-table">
+                <thead>
+                    <tr>
+                        <th>Table Size</th>
+                        <th>Booked Count (Paid)</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr><td>2-Seaters Booked</td><td id="kpi-2-seat"></td></tr>
+                    <tr><td>4-Seaters Booked</td><td id="kpi-4-seat"></td></tr>
+                    <tr><td>6-Seaters Booked</td><td id="kpi-6-seat"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-    <script>
-        const SUPABASE_URL = 'https://Rrjvdabtqzkaomjuiref.supabase.co';
-        const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyanZkYWJ0cXprYW9tanVpcmVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNDM3MzQsImV4cCI6MjA3NDcxOTczNH0.wAEeowZ8Yc8K54jAxEbY-8-mM0OGciMmyz6fJb9Z1Qg';
-        const _supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    <script>
+        const SUPABASE_URL = 'https://Rrjvdabtqzkaomjuiref.supabase.co';
+        const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyanZkYWJ0cXprYW9tanVpcmVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNDM3MzQsImV4cCI6MjA3NDcxOTczNH0.wAEeowZ8Yc8K54jAxEbY-8-mM0OGciMmyz6fJb9Z1Qg';
+        const _supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-        const CURRENT_TENANT_ID = 'R-VERIFIED-Z99';
-        const PROFIT_SHARE = 0.70;
-        
-        const currencyFormatter = new Intl.NumberFormat('en-GB', {
-            style: 'currency',
-            currency: 'GBP',
-            minimumFractionDigits: 2
-        });
-        
-        function formatPenceToGBP(pence) {
-            return currencyFormatter.format(Number(pence) / 100);
-        }
+        const CURRENT_TENANT_ID = 'R-VERIFIED-Z99';
+        const PROFIT_SHARE = 0.70;
+        
+        const currencyFormatter = new Intl.NumberFormat('en-GB', {
+            style: 'currency',
+            currency: 'GBP',
+            minimumFractionDigits: 2
+        });
+        
+        function formatPenceToGBP(pence) {
+            return currencyFormatter.format(Number(pence) / 100);
+        }
 
-        /**
-         * Calculates the percentage difference between two values.
-         */
-        function calculateTrend(current, previous) {
-            current = Number(current) || 0;
-            previous = Number(previous) || 0;
-            
-            if (previous === 0) {
-                const text = current > 0 ? 'NEW (+100%)' : 'N/A';
-                return { text: text, class: current > 0 ? 'trend-up' : 'trend-flat' };
-            }
-            
-            const percent = ((current - previous) / previous) * 100;
-            const sign = percent >= 0 ? '+' : '';
-            return {
-                text: `${sign}${percent.toFixed(1)}%`,
-                class: percent > 0 ? 'trend-up' : (percent < 0 ? 'trend-down' : 'trend-flat')
-            };
-        }
+        /**
+         * Calculates the percentage difference between two values.
+         */
+        function calculateTrend(current, previous) {
+            current = Number(current) || 0;
+            previous = Number(previous) || 0;
+            
+            if (previous === 0) {
+                const text = current > 0 ? 'NEW (+100%)' : 'N/A';
+                return { text: text, class: current > 0 ? 'trend-up' : 'trend-flat' };
+            }
+            
+            const percent = ((current - previous) / previous) * 100;
+            const sign = percent >= 0 ? '+' : '';
+            return {
+                text: `${sign}${percent.toFixed(1)}%`,
+                class: percent > 0 ? 'trend-up' : (percent < 0 ? 'trend-down' : 'trend-flat')
+            };
+        }
 
-        function getTableCapacity(w, h) {
-            if (w === 30 && h === 30) return 2;
-            if ((w === 30 && h === 50) || (w === 50 && h === 30)) return 4;
-            if (w === 90 && h === 30) return 6;
-            return 0;
-        }
+        function getTableCapacity(w, h) {
+            if (w === 30 && h === 30) return 2;
+            if ((w === 30 && h === 50) || (w === 50 && h === 30)) return 4;
+            if (w === 90 && h === 30) return 6;
+            return 0;
+        }
 
-        function processRawData(slots, tables, tracking) {
-            const rawMetrics = {
-                total_profit_pence: 0,
-                total_paid_slots: 0,
-                daily_sales_count: new Map(),
-                table_size_count: { 2: 0, 4: 0, 6: 0 },
-            };
+        function processRawData(slots, tables, tracking) {
+            const rawMetrics = {
+                total_profit_pence: 0,
+                total_paid_slots: 0,
+                daily_sales_count: new Map(),
+                table_size_count: { 2: 0, 4: 0, 6: 0 },
+            };
 
-            const tableCapacityMap = new Map(tables.map(t => [t.id, { w: t.w, h: t.h }]));
+            const tableCapacityMap = new Map(tables.map(t => [t.id, { w: t.w, h: t.h }]));
 
-            const customerSlots = slots.filter(s => s.payment_status === 'PAID' && s.is_manual_booking !== true);
+            const customerSlots = slots.filter(s => s.payment_status === 'PAID' && s.is_manual_booking !== true);
 
-            customerSlots.forEach(slot => {
-                // 1. Financial Metrics
-                rawMetrics.total_profit_pence += (slot.total_pence || 0) * PROFIT_SHARE;
-                rawMetrics.total_paid_slots++;
+            customerSlots.forEach(slot => {
+                // 1. Financial Metrics
+                rawMetrics.total_profit_pence += (slot.total_pence || 0) * PROFIT_SHARE;
+                rawMetrics.total_paid_slots++;
 
-                // 2. Daily Profit Aggregation
-                const dateKey = slot.date;
-                const dayOfWeek = new Date(dateKey).toLocaleString('en-US', { weekday: 'long' });
+                // 2. Daily Profit Aggregation
+                const dateKey = slot.date;
+                const dayOfWeek = new Date(dateKey).toLocaleString('en-US', { weekday: 'long' });
 
-                if (!rawMetrics.daily_sales_count.has(dayOfWeek)) {
-                    rawMetrics.daily_sales_count.set(dayOfWeek, { total_profit: 0, unique_dates: new Set() });
-                }
-                rawMetrics.daily_sales_count.get(dayOfWeek).total_profit += (slot.total_pence || 0) * PROFIT_SHARE;
-                rawMetrics.daily_sales_count.get(dayOfWeek).unique_dates.add(dateKey);
+                if (!rawMetrics.daily_sales_count.has(dayOfWeek)) {
+                    rawMetrics.daily_sales_count.set(dayOfWeek, { total_profit: 0, unique_dates: new Set() });
+                }
+                rawMetrics.daily_sales_count.get(dayOfWeek).total_profit += (slot.total_pence || 0) * PROFIT_SHARE;
+                rawMetrics.daily_sales_count.get(dayOfWeek).unique_dates.add(dateKey);
 
-                // 3. Table Demand Breakdown
-                const tableData = tableCapacityMap.get(slot.table_id);
-                if (tableData) {
-                    const capacity = getTableCapacity(tableData.w, tableData.h);
-                    if (rawMetrics.table_size_count[capacity] !== undefined) {
-                        rawMetrics.table_size_count[capacity]++;
-                    }
-                }
-            });
-            
-            // 4. Conversion Metrics (from tracking table)
-            const uniqueVisitors = new Set(tracking.map(t => t.booking_ref));
-            const totalCheckoutStarts = tracking.filter(t => t.checkout_started === 'TRUE').length;
+                // 3. Table Demand Breakdown
+                const tableData = tableCapacityMap.get(slot.table_id);
+                if (tableData) {
+                    const capacity = getTableCapacity(tableData.w, tableData.h);
+                    if (rawMetrics.table_size_count[capacity] !== undefined) {
+                        rawMetrics.table_size_count[capacity]++;
+                    }
+                }
+            });
+            
+            // 4. Conversion Metrics (from tracking table)
+            const uniqueVisitors = new Set(tracking.map(t => t.booking_ref));
+            const totalCheckoutStarts = tracking.filter(t => t.checkout_started === 'TRUE').length;
 
-            const totalBookings = rawMetrics.total_paid_slots || 1; 
+            const totalBookings = rawMetrics.total_paid_slots || 1; 
 
-            return {
-                financial: {
-                    total_profit_pence: rawMetrics.total_profit_pence,
-                    avg_booking_value_pence: rawMetrics.total_profit_pence / (rawMetrics.total_paid_slots || 1), 
-                    total_paid_bookings: rawMetrics.total_paid_slots,
-                },
-                daily: Array.from(rawMetrics.daily_sales_count).map(([dayOfWeek, data]) => ({
-                    day_of_week: dayOfWeek,
-                    avg_daily_profit_pence: data.total_profit / data.unique_dates.size,
-                })).sort((a, b) => new Date(a.day_of_week + ', 2000').getDay() - new Date(b.day_of_week + ', 2000').getDay()), 
-                
-                demand: rawMetrics.table_size_count,
-                funnel: {
-                    total_people_viewed_link: uniqueVisitors.size,
-                    total_checkout_started: totalCheckoutStarts,
-                }
-            };
-        }
-
-
-        async function loadReports() {
-            // Retrieve status element locally inside the function
-            const statusElement = document.getElementById('status');
-            
-            try {
-                // --- 1. Fetch All Raw Data from Tables (Bypassing Views) ---
-                const slotsPromise = _supa.from('premium_slots').select('*').eq('tenant_id', CURRENT_TENANT_ID);
-                const tablesPromise = _supa.from('tables').select('id, w, h').eq('tenant_id', CURRENT_TENANT_ID);
-                const trackingPromise = _supa.from('engagement_tracking').select('*').eq('tenant_id', CURRENT_TENANT_ID);
-
-                const [slotsResult, tablesResult, trackingResult] = await Promise.all([slotsPromise, tablesPromise, trackingPromise]);
-                
-                // CRITICAL CHECK: Throw error if any essential data fetch fails
-                if (slotsResult.error) throw new Error("Booking Data Error: " + slotsResult.error.message);
-                if (tablesResult.error) throw new Error("Table Data Error: " + tablesResult.error.message);
-                if (trackingResult.error) throw new Error("Tracking Data Error: " + trackingResult.error.message);
-                
-                // Process and aggregate all metrics client-side
-                const rawMetrics = processRawData(slotsResult.data, tablesResult.data, trackingResult.data);
-                
-                
-                // --- MOCKING LAST MONTH DATA (Needed for trend calculation) ---
-                const lastMonthMetrics = { 
-                    total_profit_pence: 20000, 
-                    avg_booking_value_pence: 500,
-                    total_people_viewed_link: 20,
-                    total_paid_bookings: 3
-                }; 
-                // ----------------------------------------------------
+            return {
+                financial: {
+                    total_profit_pence: rawMetrics.total_profit_pence,
+                    avg_booking_value_pence: rawMetrics.total_profit_pence / (rawMetrics.total_paid_slots || 1), 
+                    total_paid_bookings: rawMetrics.total_paid_slots,
+                },
+                daily: Array.from(rawMetrics.daily_sales_count).map(([dayOfWeek, data]) => ({
+                    day_of_week: dayOfWeek,
+                    avg_daily_profit_pence: data.total_profit / data.unique_dates.size,
+                })).sort((a, b) => new Date(a.day_of_week + ', 2000').getDay() - new Date(b.day_of_week + ', 2000').getDay()), 
+                
+                demand: rawMetrics.table_size_count,
+                funnel: {
+                    total_people_viewed_link: uniqueVisitors.size,
+                    total_checkout_started: totalCheckoutStarts,
+                }
+            };
+        }
 
 
-                // --- 2. Financial & Trend Analysis ---
-                const funnel = rawMetrics.funnel;
-                const financial = rawMetrics.financial;
-                
-                const linksViewed = funnel.total_people_viewed_link;
-                const paidBookings = financial.total_paid_bookings;
-                const totalProfit = financial.total_profit_pence;
-                const avgValue = financial.avg_booking_value_pence;
-                
-                // FIX: Conversion Rate Calculation
-                const conversionRate = (linksViewed > 0) ? ((paidBookings / linksViewed) * 100).toFixed(2) + '%' : '0.00%';
+        async function loadReports() {
+            // Retrieve status element locally inside the function
+            const statusElement = document.getElementById('status');
+            
+            try {
+                // --- 1. Fetch All Raw Data from Tables (Bypassing Views) ---
+                const slotsPromise = _supa.from('premium_slots').select('*').eq('tenant_id', CURRENT_TENANT_ID);
+                const tablesPromise = _supa.from('tables').select('id, w, h').eq('tenant_id', CURRENT_TENANT_ID);
+                const trackingPromise = _supa.from('engagement_tracking').select('*').eq('tenant_id', CURRENT_TENANT_ID);
 
-                // Display Values
-                document.getElementById('kpi-total-profit').textContent = formatPenceToGBP(totalProfit);
-                document.getElementById('kpi-avg-value').textContent = formatPenceToGBP(avgValue);
-                document.getElementById('kpi-link-opened').textContent = linksViewed;
-                document.getElementById('kpi-paid').textContent = paidBookings;
-                document.getElementById('kpi-rate').textContent = conversionRate; // Display the Conversion Rate
-
-                // Display Trends
-                const profitTrend = calculateTrend(totalProfit, lastMonthMetrics.total_profit_pence);
-                document.getElementById('kpi-profit-trend').innerHTML = `<span class="${profitTrend.class}">${profitTrend.text}</span>`;
-                
-                const avgTrend = calculateTrend(avgValue, lastMonthMetrics.avg_booking_value_pence);
-                document.getElementById('kpi-avg-value-trend').innerHTML = `<span class="${avgTrend.class}">${avgTrend.text}</span>`;
-                
-                const viewTrend = calculateTrend(linksViewed, lastMonthMetrics.total_people_viewed_link);
-                document.getElementById('kpi-view-trend').innerHTML = `<span class="${viewTrend.class}">${viewTrend.text}</span>`;
-                
-                const paidTrend = calculateTrend(paidBookings, lastMonthMetrics.total_paid_bookings);
-                document.getElementById('kpi-paid-trend').innerHTML = `<span class="${paidTrend.class}">${paidTrend.text}</span>`;
+                const [slotsResult, tablesResult, trackingResult] = await Promise.all([slotsPromise, tablesPromise, trackingPromise]);
+                
+                // CRITICAL CHECK: Throw error if any essential data fetch fails
+                if (slotsResult.error) throw new Error("Booking Data Error: " + slotsResult.error.message);
+                if (tablesResult.error) throw new Error("Table Data Error: " + tablesResult.error.message);
+                if (trackingResult.error) throw new Error("Tracking Data Error: " + trackingResult.error.message);
+                
+                // Process and aggregate all metrics client-side
+                const rawMetrics = processRawData(slotsResult.data, tablesResult.data, trackingResult.data);
+                
+                
+                // --- MOCKING LAST MONTH DATA (Needed for trend calculation) ---
+                const lastMonthMetrics = { 
+                    total_profit_pence: 20000, 
+                    avg_booking_value_pence: 500,
+                    total_people_viewed_link: 20,
+                    total_paid_bookings: 3
+                }; 
+                // ----------------------------------------------------
 
 
-                // --- 3. Daily Profit Metrics ---
-                const dailyProfitBody = document.getElementById('daily-profit-body');
-                dailyProfitBody.innerHTML = '';
-                const dailyData = rawMetrics.daily;
-                if (dailyData && dailyData.length > 0) {
-                    dailyData.forEach(day => {
-                        const row = dailyProfitBody.insertRow();
-                        row.insertCell().textContent = day.day_of_week.trim();
-                        row.insertCell().textContent = formatPenceToGBP(day.avg_daily_profit_pence);
-                    });
-                } else {
-                    dailyProfitBody.innerHTML = '<tr><td colspan="2">No paid data for daily analysis.</td></tr>';
-                }
+                // --- 2. Financial & Trend Analysis ---
+                const funnel = rawMetrics.funnel;
+                const financial = rawMetrics.financial;
+                
+                const linksViewed = funnel.total_people_viewed_link;
+                const paidBookings = financial.total_paid_bookings;
+                const totalProfit = financial.total_profit_pence;
+                const avgValue = financial.avg_booking_value_pence;
+                
+                // FIX: Conversion Rate Calculation
+                const conversionRate = (linksViewed > 0) ? ((paidBookings / linksViewed) * 100).toFixed(2) + '%' : '0.00%';
 
-                // --- 4. Table Demand Metrics ---
-                document.getElementById('kpi-2-seat').textContent = rawMetrics.demand[2] || 0;
-                document.getElementById('kpi-4-seat').textContent = rawMetrics.demand[4] || 0;
-                document.getElementById('kpi-6-seat').textContent = rawMetrics.demand[6] || 0;
-                
-                // Final success status
-                statusElement.textContent = `Report loaded successfully for Tenant: ${CURRENT_TENANT_ID} (Client-Side Aggregation)`;
-                statusElement.style.backgroundColor = '#b7d7a8';
+                // Display Values
+                document.getElementById('kpi-total-profit').textContent = formatPenceToGBP(totalProfit);
+                document.getElementById('kpi-avg-value').textContent = formatPenceToGBP(avgValue);
+                document.getElementById('kpi-link-opened').textContent = linksViewed;
+                document.getElementById('kpi-paid').textContent = paidBookings;
+                document.getElementById('kpi-rate').textContent = conversionRate; // Display the Conversion Rate
 
-            } catch (error) {
-                console.error("Failed to load reports:", error);
-                
-                // Final safe error assignment
-                statusElement.textContent = `Error loading reports: ${error.message}`;
-                statusElement.style.backgroundColor = '#ff5050';
-            }
-        }
+                // Display Trends
+                const profitTrend = calculateTrend(totalProfit, lastMonthMetrics.total_profit_pence);
+                document.getElementById('kpi-profit-trend').innerHTML = `<span class="${profitTrend.class}">${profitTrend.text}</span>`;
+                
+                const avgTrend = calculateTrend(avgValue, lastMonthMetrics.avg_booking_value_pence);
+                document.getElementById('kpi-avg-value-trend').innerHTML = `<span class="${avgTrend.class}">${avgTrend.text}</span>`;
+                
+                const viewTrend = calculateTrend(linksViewed, lastMonthMetrics.total_people_viewed_link);
+                document.getElementById('kpi-view-trend').innerHTML = `<span class="${viewTrend.class}">${viewTrend.text}</span>`;
+                
+                const paidTrend = calculateTrend(paidBookings, lastMonthMetrics.total_paid_bookings);
+                document.getElementById('kpi-paid-trend').innerHTML = `<span class="${paidTrend.class}">${paidTrend.text}</span>`;
 
-        // Ensure loadReports runs only after all HTML elements are defined.
-        document.addEventListener('DOMContentLoaded', loadReports);
-    </script>
+
+                // --- 3. Daily Profit Metrics ---
+                const dailyProfitBody = document.getElementById('daily-profit-body');
+                dailyProfitBody.innerHTML = '';
+                const dailyData = rawMetrics.daily;
+                if (dailyData && dailyData.length > 0) {
+                    dailyData.forEach(day => {
+                        const row = dailyProfitBody.insertRow();
+                        row.insertCell().textContent = day.day_of_week.trim();
+                        row.insertCell().textContent = formatPenceToGBP(day.avg_daily_profit_pence);
+                    });
+                } else {
+                    dailyProfitBody.innerHTML = '<tr><td colspan="2">No paid data for daily analysis.</td></tr>';
+                }
+
+                // --- 4. Table Demand Metrics ---
+                document.getElementById('kpi-2-seat').textContent = rawMetrics.demand[2] || 0;
+                document.getElementById('kpi-4-seat').textContent = rawMetrics.demand[4] || 0;
+                document.getElementById('kpi-6-seat').textContent = rawMetrics.demand[6] || 0;
+                
+                // Final success status
+                statusElement.textContent = `Report loaded successfully for Tenant: ${CURRENT_TENANT_ID} (Client-Side Aggregation)`;
+                statusElement.style.backgroundColor = '#b7d7a8';
+
+            } catch (error) {
+                console.error("Failed to load reports:", error);
+                
+                // Final safe error assignment
+                statusElement.textContent = `Error loading reports: ${error.message}`;
+                statusElement.style.backgroundColor = '#ff5050';
+            }
+        }
+
+        // Ensure loadReports runs only after all HTML elements are defined.
+        document.addEventListener('DOMContentLoaded', loadReports);
+    </script>
 </body>
 </html>
