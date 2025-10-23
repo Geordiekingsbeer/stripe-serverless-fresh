@@ -290,7 +290,7 @@
             text-align: left;
         }
         
-        /* The #set-party-size button also needs its own width/centering to correctly inherit green-action-btn's size behavior within the modal */
+		/* The #set-party-size button also needs its own width/centering to correctly inherit green-action-btn's size behavior within the modal */
         #set-party-size {
             width: auto; /* Allow button to size to its content */
             display: block; /* Make it a block element to center with margins */
@@ -874,12 +874,12 @@
             const tableCapacityToAdd = getTableCapacity(tableData.w, tableData.h);
             const newCapacity = getSelectedTablesCapacity() + tableCapacityToAdd;
             
-            // --- NEW: Real-time Multi-Select Buffer Check ---
+            // --- CHECK: Real-time Multi-Select Buffer Check ---
             if (isMultiSelectMode && isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, newCapacity)) {
                 alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${getSelectedTablesCapacity()}.`);
                 return;
             }
-            // --- END NEW CHECK ---
+            // --- END CHECK ---
             
             // Enforce the rule: Individual parties cannot select more than 6 capacity total unless using multi-select mode.
             if (newCapacity > 6 && !isMultiSelectMode) {
@@ -909,9 +909,10 @@
     // Helper function to determine if the selected capacity is excessively wasteful
     function isWastedCapacityAllowedForBooking(partySize, totalCapacity) {
         if (partySize === 0) return false;
-        // Allow a slight buffer of 2 extra seats (e.g., party of 2 can book up to 4 capacity).
-        // If the total capacity exceeds the party size by more than 2, block it.
-        const maxAllowedCapacity = partySize + 2; 
+        // FIX: Change max allowed buffer from +2 to +1.
+        // E.g., Party of 2 can reserve max (2 + 1) = 3 capacity.
+        // Two 2-seaters = 4 capacity. Since 4 > 3, it is blocked.
+        const maxAllowedCapacity = partySize + 1; 
         
         return totalCapacity > maxAllowedCapacity;
     }
@@ -997,7 +998,7 @@
 			return;
 		}
         
-        // Final Check for EXCESSIVE capacity before opening the payment modal
+        // Final Check 1: Check for EXCESSIVE capacity before opening the payment modal
         const totalCapacity = getSelectedTablesCapacity();
         if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
             alert(`Error: Your party of ${CURRENT_PARTY_SIZE} cannot reserve tables with a combined capacity of ${totalCapacity}. Please reduce the number of selected tables.`);
@@ -1038,14 +1039,14 @@
 
         const totalCapacity = getSelectedTablesCapacity();
         
-        // Re-check 1: Check for EXCESSIVE capacity here before payment processing
+        // Final Check 1: Check for EXCESSIVE capacity here before payment processing
         if (isWastedCapacityAllowedForBooking(partySize, totalCapacity)) {
             alert(`Error: Your party of ${partySize} cannot reserve tables with a combined capacity of ${totalCapacity}. Please reduce the number of selected tables.`);
             return;
         }
         
 
-        // Re-check 2: Enforce Minimum Capacity in ALL MODES
+        // Final Check 2: Enforce Minimum Capacity in ALL MODES
         let requiredMinCapacity;
         if (partySize <= 2) requiredMinCapacity = 2;
         else if (partySize <= 4) requiredMinCapacity = 4;
@@ -1057,7 +1058,7 @@
              return;
         }
 
-        // Re-check 3: Max Capacity Check (Party size cannot exceed total selected table capacity)
+        // Final Check 3: Max Capacity Check (Party size cannot exceed total selected table capacity)
         if (partySize > totalCapacity) {
              alert(`Error: Your party size (${partySize}) exceeds the total selected table capacity (${totalCapacity}).`);
              return;
