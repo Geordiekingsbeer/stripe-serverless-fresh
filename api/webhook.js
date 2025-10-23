@@ -39,7 +39,7 @@ function cleanNotes(notes) {
     return cleanedNotes || 'Stripe Payment Confirmed (No additional notes)';
 }
 
-// --- UPDATED FUNCTION: CUSTOMER CONFIRMATION ---
+// --- EMAIL FUNCTIONS ---
 async function sendCustomerConfirmation(booking, displayName) {
     const senderEmail = 'info@dineselect.co';
     const customerEmail = booking.customer_email;
@@ -76,10 +76,9 @@ async function sendCustomerConfirmation(booking, displayName) {
     }
 }
 
-// --- UPDATED FUNCTION: STAFF NOTIFICATION ---
 async function sendBookingNotification(booking, type, displayName) {
     const staffEmail = 'geordie.kingsbeer@gmail.com';
-    const senderEmail = 'info@dineselect.co'; 
+    const senderEmail = 'info@dineselect.co';
     
     const subject = `[NEW BOOKING - ${type}] ${displayName}: Table(s) ${booking.table_id}`;
     const body = `
@@ -112,7 +111,7 @@ async function sendBookingNotification(booking, type, displayName) {
 }
 
 
-// --- MAIN WEBHOOK HANDLER (No change to main logic) ---
+// --- MAIN WEBHOOK HANDLER (FIXED LOGIC) ---
 
 const getRawBody = (req) => {
     return new Promise((resolve) => {
@@ -143,16 +142,23 @@ export default async (req, res) => {
     }
     
     const eventId = event.id;
-    const { data: existingEvent } = await supabase
+    
+    // 1. IDEMPOTENCY CHECK
+    const { data: existingEvent, error: selectError } = await supabase
         .from('webhook_events')
         .select('id')
         .eq('stripe_event_id', eventId)
         .maybeSingle();
 
-    if (existingEvent) {
+    if (selectError) {
+        console.error('[IDEMPOTENCY FAILURE] Error checking existing event:', selectError.message);
+        // Continue processing to avoid infinite retries from Stripe, but log the error
+    } else if (existingEvent) {
         console.log(`[IDEMPOTENCY] Event ${eventId} already processed.`);
         return res.status(200).json({ received: true });
     }
+    
+    // --- START PROCESSING EVENT ---
 
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
@@ -164,14 +170,20 @@ export default async (req, res) => {
         }
 
         const totalAmountPence = session.amount_total;
-
         const tableIds = metadata.table_ids.split(',');
         
+        // Timezone safe calculation for 2 hours later
         const [hour, minute] = metadata.booking_time.split(':').map(Number);
-        const endTime = new Date();
-        endTime.setHours(hour + 2);
-        endTime.setMinutes(minute);
-        const endTimeStr = `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}:00`;
+        const bookingDateTime = new Date();
+        bookingDateTime.setHours(hour);
+        bookingDateTime.setMinutes(minute);
+        bookingDateTime.setSeconds(0);
+        bookingDateTime.setMilliseconds(0);
+        
+        // Add 2 hours (120 minutes)
+        bookingDateTime.setMinutes(bookingDateTime.getMinutes() + 120); 
+
+        const endTimeStr = `${String(bookingDateTime.getHours()).padStart(2, '0')}:${String(bookingDateTime.getMinutes()).padStart(2, '0')}:00`;
 
         const customerEmail = metadata.email || (session.customer_details ? session.customer_details.email : null);
         const receiveOffers = metadata.receive_offers;
@@ -192,8 +204,26 @@ export default async (req, res) => {
             total_pence: totalAmountPence, 
             booking_ref: metadata.booking_ref,
         };
+        
+        // 2. LOG THE EVENT (FIX) - Do this immediately after the metadata is confirmed
+        const { error: insertEventError } = await supabase
+            .from('webhook_events')
+            .insert({
+                stripe_event_id: eventId,
+                event_type: event.type,
+                tenant_id: metadata.tenant_id,
+                status: 'processing',
+                host_notes: `Ref: ${metadata.booking_ref}`,
+            });
 
-        // 1. Insert into premium_slots (Transactional Booking Data)
+        if (insertEventError) {
+            console.error('[WEBHOOK_EVENTS FAILURE] Failed to log new event:', insertEventError.message);
+        } else {
+            console.log('[WEBHOOK_EVENTS SUCCESS] Event logged as processing.');
+        }
+
+
+        // 3. Insert into premium_slots (CRITICAL BOOKING DATA)
         for (const tableId of tableIds) {
             const { error } = await supabase
                 .from('premium_slots')
@@ -215,18 +245,34 @@ export default async (req, res) => {
                 });
             
             if (error) {
-                console.error(`[SUPABASE FAILURE] Insert error for table ${tableId}:`, error.message);
-                // Note: Leaving this commented to ensure single table errors don't stop the whole webhook process
+                console.error(`[PREMIUM_SLOTS FAILURE] Insert error for table ${tableId}:`, error.message);
+                // CRITICAL: Ensure this error is logged so you can debug the specific table/column failure
             } else {
                 console.log(`[BOOKING SUCCESS] Table ${tableId} booked for ${metadata.booking_date}`);
             }
         }
         
-        // 2. Send Notifications (Staff and Customer)
+        // 4. Update Engagement Tracking (CONFIRMED LOGIC)
+        const { error: trackingUpdateError } = await supabase
+            .from('engagement_tracking')
+            .update({ 
+                checkout_complete: 'TRUE',
+                payment_successful: 'TRUE',
+                event_type: 'payment_successful'
+            })
+            .eq('booking_ref', metadata.booking_ref);
+
+        if (trackingUpdateError) {
+            console.error('[TRACKING FAILURE] Failed to update engagement_tracking:', trackingUpdateError.message);
+        } else {
+            console.log(`[TRACKING SUCCESS] Ref ${metadata.booking_ref} marked as complete.`);
+        }
+        
+        // 5. Send Notifications (Staff and Customer)
         await sendBookingNotification(primaryBooking, 'CUSTOMER PAID', tenantDisplayName);
         await sendCustomerConfirmation(primaryBooking, tenantDisplayName); 
 
-        // 3. Insert into marketing_optins (Consent Data)
+        // 6. Insert into marketing_optins (Consent Data)
         if (receiveOffers === 'TRUE' && customerEmail) {
             const optInRow = {
                 email: customerEmail,
@@ -246,8 +292,19 @@ export default async (req, res) => {
                 console.error('Error inserting marketing opt-in:', optinError);
             }
         }
-    }
+        
+        // 7. Update event log status to 'complete'
+        const { error: updateError } = await supabase
+            .from('webhook_events')
+            .update({ status: 'completed' })
+            .eq('stripe_event_id', eventId);
+        
+        if (updateError) {
+            console.error('Failed to mark webhook_event as completed:', updateError.message);
+        }
 
-    // 4. Return success to Stripe
+    } // End of checkout.session.completed block
+
+    // 8. Return success to Stripe (Final Step)
     return res.status(200).json({ received: true });
 };
