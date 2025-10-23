@@ -214,15 +214,42 @@
 		}
 
 		.modal-content {
-			background-color: #fefefe;
-			padding: 30px;
-			border: 1px solid #888;
-			width: 90%;	
-			max-width: 400px;
-			border-radius: 10px;
-			box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-			margin: 10vh auto;
-		}
+    position: relative;        /* <-- ADD THIS so the close button can be absolutely positioned within the modal */
+    background-color: #fefefe;
+    padding: 30px;
+    border: 1px solid #888;
+    width: 90%;
+    max-width: 400px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    margin: 10vh auto;
+}
+
+/* Close (X) button in top-right of modal */
+.close-modal {
+    position: absolute;        /* positioned relative to .modal-content */
+    top: 10px;                 /* distance from the top of modal-content */
+    right: 15px;               /* distance from the right edge */
+    font-size: 24px;
+    font-weight: 700;
+    color: #888;
+    cursor: pointer;
+    line-height: 1;
+    user-select: none;
+    border: none;
+    background: transparent;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+/* Hover/Focus states to make it obvious and accessible */
+.close-modal:hover,
+.close-modal:focus {
+    color: #000;
+    outline: none;
+    background-color: rgba(0,0,0,0.04);
+}
 		
 		/* Modal Content Inputs */
 		.modal-content input {
@@ -323,8 +350,9 @@
 	<button id="payBtn" class="green-action-btn" disabled>Pay for 0 Tables – Stripe</button>
 
 	<div id="customer-modal" class="modal">
-		<div class="modal-content">
-			<h3>Confirm Reservation Details</h3>
+    <div class="modal-content">
+        <span class="close-modal" id="close-customer-modal">&times;</span>
+        <h3>Confirm Reservation Details</h3>
 			<form id="customer-form">
 				<input type="text" id="customer-name" placeholder="Full Name" required>
 				<input type="number" id="party-size-hidden" placeholder="Party Size (e.g., 4)" min="1" required>
@@ -1021,7 +1049,43 @@
 
 		customerModal.style.display = 'flex';
 	};
-	
+	// -------- Close button logic for Confirm Reservation Details modal --------
+(function() {
+    const customerModalEl = document.getElementById('customer-modal');
+    const closeBtn = document.getElementById('close-customer-modal');
+
+    // Basic click: hide the modal
+    closeBtn.addEventListener('click', () => {
+        customerModalEl.style.display = 'none';
+    });
+
+    // Make the close button keyboard-friendly (Enter/Space)
+    closeBtn.setAttribute('tabindex', '0');            // allow tab focus
+    closeBtn.setAttribute('role', 'button');           // accessibility role
+    closeBtn.setAttribute('aria-label', 'Close dialog');
+
+    closeBtn.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault();
+            customerModalEl.style.display = 'none';
+        }
+    });
+
+    // Close modal when clicking outside the modal-content (optional but common UX)
+    customerModalEl.addEventListener('click', (ev) => {
+        if (ev.target === customerModalEl) {
+            customerModalEl.style.display = 'none';
+        }
+    });
+
+    // Close modal on Escape key (global)
+    document.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Escape' && customerModalEl.style.display === 'flex') {
+            customerModalEl.style.display = 'none';
+        }
+    });
+})();
+
 	customerForm.addEventListener('submit', async function(e) {
 		e.preventDefault();
 
