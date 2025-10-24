@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend'; // Now included again
+import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -29,7 +29,7 @@ async function getTenantDisplayName(tenantId) {
     return data.display_name;
 }
 
-// ... (Other utility and email functions unchanged)
+// NOTE: The cleanNotes utility function has been removed as it was not used in the main flow
 
 async function sendCustomerConfirmation(booking, displayName) {
     const senderEmail = 'info@dineselect.co';
@@ -172,7 +172,7 @@ export default async (req, res) => {
 
 
         const totalAmountPence = session.amount_total;
-        const tableIds = metadata.table_ids.split(','); // Array of table ID strings
+        const tableIds = metadata.table_ids.split(','); 
         
         // Timezone safe calculation for 2 hours later
         const [hour, minute] = metadata.booking_time.split(':').map(Number);
@@ -226,7 +226,6 @@ export default async (req, res) => {
                 });
             
             if (error) {
-                // **THIS IS THE LINE YOU MUST CHECK IN VERCEl LOGS**
                 console.error(`[PREMIUM_SLOTS FAILURE] Insert error for table ${tableId}:`, error.message);
                 // Continue to try and process other tables
             } else {
@@ -234,25 +233,35 @@ export default async (req, res) => {
             }
         }
         
-        // 4. Update Engagement Tracking (CONFIRMED LOGIC)
-        // ... (rest of the logic: tracking, emails, opt-ins, final status update)
+        // 4. Update Engagement Tracking (REMOVED)
+        console.log('[TRACKING SKIPPED] Engagement tracking update skipped as requested.');
         
-        const { error: trackingUpdateError } = await supabase
-            .from('engagement_tracking')
-            .update({ checkout_completed: 'TRUE', payment_successful: 'TRUE', event_type: 'payment_successful' })
-            .eq('booking_ref', metadata.booking_ref);
-
-        if (trackingUpdateError) {
-            console.error('[TRACKING FAILURE] Failed to update engagement_tracking:', trackingUpdateError.message);
-        } else {
-            console.log(`[TRACKING SUCCESS] Ref ${metadata.booking_ref} marked as complete.`);
-        }
-        
+        // 5. Send Notifications (Staff and Customer)
         await sendBookingNotification(primaryBooking, 'CUSTOMER PAID', tenantDisplayName);
         await sendCustomerConfirmation(primaryBooking, tenantDisplayName); 
         
-        // (Marketing Opt-in logic stripped for brevity, ensure you copy this back from your original working code if not present)
+        // 6. Insert into marketing_optins (Consent Data) - UNCHANGED FROM ORIGINAL
+        if (receiveOffers === 'TRUE' && customerEmail) {
+            const optInRow = {
+                email: customerEmail,
+                tenant_id: metadata.tenant_id,
+                booking_date: metadata.booking_date,
+                location: metadata.tenant_id,
+                source: metadata.booking_ref || 'table_booking',
+                consent_text: 'Send me restaurant discounts and offers',
+                is_subscribed: true
+            };
+            
+            const { error: optinError } = await supabase
+                .from('marketing_optins')
+                .upsert([optInRow], { onConflict: 'email, tenant_id' });
 
+            if (optinError) {
+                console.error('Error inserting marketing opt-in:', optinError);
+            }
+        }
+
+        // 7. Update event log status to 'complete'
         const { error: updateError } = await supabase
             .from('webhook_events')
             .update({ status: 'completed' })
@@ -264,6 +273,6 @@ export default async (req, res) => {
 
     } // End of checkout.session.completed block
 
-    // 5. Return success to Stripe (Final Step)
+    // 8. Return success to Stripe (Final Step)
     return res.status(200).json({ received: true });
 };
