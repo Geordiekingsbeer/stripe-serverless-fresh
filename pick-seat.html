@@ -1033,20 +1033,6 @@
             return;
         }
 
-		if (URL_PARAMS.booking_ref) {
-            const trackingEvent = {
-                tenant_id: URL_PARAMS.tenant_id,
-                booking_ref: URL_PARAMS.booking_ref,
-                checkout_started: 'TRUE',
-            };
-            
-            const { error } = await _supa
-                .from('engagement_tracking')
-                .upsert([trackingEvent], { onConflict: 'booking_ref' }); 
-
-			if (error) console.error('Tracking Error (Checkout Start):', error);
-		}
-
 		customerModal.style.display = 'flex';
 	};
 	// -------- Close button logic for Confirm Reservation Details modal --------
