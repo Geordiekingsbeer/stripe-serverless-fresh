@@ -29,6 +29,54 @@ async function getTenantDisplayName(tenantId) {
     return data.display_name;
 }
 
+// NOTE: This function's subject line is now unique for each booking time.
+async function sendBookingNotification(booking, type, displayName) {
+    const staffEmail = 'geordie.kingsbeer@gmail.com';
+    const senderEmail = 'info@dineselect.co';
+    
+    // Extract date and time for the subject line
+    const bookingDate = booking.date; // e.g., 2025-10-24
+    const bookingTime = booking.start_time.substring(0, 5); // e.g., 19:00
+    
+    // Determine the subject based on success or failure type
+    const isConflict = type === 'BOOKING CONFLICT FAIL';
+    
+    // NEW SUBJECT LINE: Includes Date and Time to prevent email client grouping
+    const subject = isConflict 
+        ? `[ACTION REQUIRED - ${type}] ${displayName} - ${bookingDate} ${bookingTime}`
+        : `[NEW BOOKING - ${type}] ${displayName} - ${bookingDate} ${bookingTime}`;
+
+    const refundWarningHtml = isConflict
+        ? '<h3 style="color:red; font-size: 16px;">ACTION REQUIRED: MANUAL REFUND VIA STRIPE IS NEEDED.</h3><p>The table was double-booked in the database, but the customer paid. The payment must be refunded immediately.</p>'
+        : '';
+        
+    const body = `
+        <p>A booking has been processed for <b>${displayName}</b>.</p>
+        <p><strong>Customer:</strong> ${booking.customer_name || 'N/A'}</p>
+        <ul>
+            <li><strong>Party Size:</strong> ${booking.party_size || 'N/A'}</li>
+            <li><strong>Table Number(s):</strong> ${booking.table_id}</li>
+            <li><strong>Date:</strong> ${booking.date}</li>
+            <li><strong>Time:</strong> ${booking.start_time} - ${booking.end_time}</li>
+            <li><strong>Status:</strong> ${type}</li>
+            <li><strong>Stripe Order ID:</strong> ${booking.host_notes.replace('Stripe Order: ', '')}</li>
+            <li><strong>Customer Email:</strong> ${booking.customer_email || 'N/A'}</li>
+        </ul>
+        ${refundWarningHtml}
+    `;
+    
+    try {
+        await resend.emails.send({
+            from: senderEmail, to: staffEmail, subject: subject, html: body,
+        });
+        console.log(`Email Sent: Successfully notified staff.`);
+        return { success: true };
+    } catch (error) {
+        console.error('Email Error: Failed to send staff notification via Resend:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 async function sendCustomerConfirmation(booking, displayName) {
     const senderEmail = 'info@dineselect.co';
     const customerEmail = booking.customer_email;
@@ -36,7 +84,7 @@ async function sendCustomerConfirmation(booking, displayName) {
     const body = `
         <p>Dear ${booking.customer_name || 'Customer'},</p>
         <p>Your premium table reservation at <b>${displayName}</b> has been successfully confirmed and paid for.</p>
-        <p><strong>Reservation Details: (REFUND NEEDED)</strong></p>
+        <p><strong>Reservation Details:</strong></p>
         <ul>
             <li><strong>Restaurant:</strong> ${displayName}</li>
             <li><strong>Date:</strong> ${booking.date}</li>
@@ -57,39 +105,6 @@ async function sendCustomerConfirmation(booking, displayName) {
         return { success: true };
     } catch (error) {
         console.error('Email Error: Failed to send customer confirmation via Resend:', error);
-        return { success: false, error: error.message };
-    }
-}
-
-async function sendBookingNotification(booking, type, displayName) {
-    const staffEmail = 'geordie.kingsbeer@gmail.com';
-    const senderEmail = 'info@dineselect.co';
-    
-    // NOTE: This notification subject is updated to warn of a failure!
-    const subject = `[${type}] ${displayName}: Table(s) ${booking.table_id}`; 
-    const body = `
-        <p>A booking has been processed for <b>${displayName}</b>.</p>
-        <p><strong>Customer:</strong> ${booking.customer_name || 'N/A'}</p>
-        <ul>
-            <li><strong>Party Size:</strong> ${booking.party_size || 'N/A'}</li>
-            <li><strong>Table Number(s):</strong> ${booking.table_id}</li>
-            <li><strong>Date:</strong> ${booking.date}</li>
-            <li><strong>Time:</strong> ${booking.start_time} - ${booking.end_time}</li>
-            <li><strong>Status:</strong> ${type}</li>
-            <li><strong>Stripe Order ID:</strong> ${booking.host_notes.replace('Stripe Order: ', '')}</li>
-            <li><strong>Customer Email:</strong> ${booking.customer_email || 'N/A'}</li>
-        </ul>
-        ${type === 'BOOKING CONFLICT FAIL' ? '<h3 style="color:red;">ACTION REQUIRED: MANUAL REFUND VIA STRIPE IS NEEDED.</h3><p>The table was double-booked in the database, but the customer paid. The payment must be refunded immediately.</p>' : ''}
-    `;
-    
-    try {
-        await resend.emails.send({
-            from: senderEmail, to: staffEmail, subject: subject, html: body,
-        });
-        console.log(`Email Sent: Successfully notified staff.`);
-        return { success: true };
-    } catch (error) {
-        console.error('Email Error: Failed to send staff notification via Resend:', error);
         return { success: false, error: error.message };
     }
 }
@@ -229,7 +244,6 @@ export default async (req, res) => {
                 console.error(`[PREMIUM_SLOTS FAILURE] Insert error for table ${tableId}:`, error.message);
                 // CRITICAL CHANGE: Mark the entire transaction as failed
                 allBookingsSuccessful = false; 
-                // Do NOT return here, continue trying to process other tables (if multi-table booking)
             } else {
                 console.log(`[PREMIUM_SLOTS SUCCESS] Table ${tableId} booked.`);
             }
@@ -276,15 +290,14 @@ export default async (req, res) => {
              }
 
         } else {
-            console.warn(`[T2 FAILURE LOG] Booking for ref ${metadata.booking_ref} failed due to conflict. No confirmation email sent to customer.`);
+            console.warn(`[T2 FAILURE LOG] Booking for ref ${metadata.booking_ref} failed due to conflict. Refund required.`);
             
             // Send urgent alert to staff indicating a refund is needed
             await sendBookingNotification(primaryBooking, 'BOOKING CONFLICT FAIL', tenantDisplayName);
             
-            // NOTE: We do NOT send a success confirmation to the customer.
-            
-            // We still return 200 to Stripe, confirming we processed their webhook, 
-            // even though the DB update failed (Stripe is not responsible for the conflict).
+            // NOTE: We still send a generic confirmation to the customer for Stripe's sake, 
+            // but staff must execute the refund immediately.
+            await sendCustomerConfirmation(primaryBooking, tenantDisplayName); 
         }
     } // End of checkout.session.completed block
 
