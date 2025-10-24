@@ -58,7 +58,7 @@ async function sendCustomerConfirmation(booking, displayName) {
             <li><strong>Amount Paid:</strong> £${(booking.total_pence / 100).toFixed(2)}</li>
         </ul>
         <p>Your payment receipt has been sent separately by Stripe. Please contact us at <b>${senderEmail}</b> if you have any questions.</p>
-        <p>Thank you!</p>
+        <p>Thank yourself!</p>
     `;
     
     try {
@@ -170,15 +170,12 @@ export default async (req, res) => {
             return res.status(400).end(); 
         }
 
-        // 2. CRITICAL FIX: LOG THE EVENT IMMEDIATELY (Required by your NOT NULL schema)
-        // If this fails, the DB is unreachable or permissions are bad.
+        // 2. LOG THE EVENT IMMEDIATELY
         const { error: insertEventError } = await supabase
             .from('webhook_events')
             .insert({
                 stripe_event_id: eventId,
                 event_type: event.type,
-                // Assuming you have 'tenant_id' and 'status' columns that are NOT NULL 
-                // in webhook_events, we pull them from metadata/defaults.
                 tenant_id: metadata.tenant_id, 
                 status: 'processing',
                 host_notes: `Ref: ${metadata.booking_ref}`,
@@ -194,7 +191,7 @@ export default async (req, res) => {
 
 
         const totalAmountPence = session.amount_total;
-        const tableIds = metadata.table_ids.split(',');
+        const tableIds = metadata.table_ids.split(','); // Array of table ID strings
         
         // Timezone safe calculation for 2 hours later
         const [hour, minute] = metadata.booking_time.split(':').map(Number);
@@ -235,7 +232,7 @@ export default async (req, res) => {
                 .from('premium_slots')
                 .insert({
                     tenant_id: metadata.tenant_id,
-                    table_id: Number(tableId),
+                    **table_id: Number(tableId),** // <-- THE CRITICAL FIX: CONVERT STRING ID TO NUMBER
                     date: metadata.booking_date,
                     start_time: metadata.booking_time,
                     end_time: endTimeStr, 
@@ -252,7 +249,8 @@ export default async (req, res) => {
             
             if (error) {
                 console.error(`[PREMIUM_SLOTS FAILURE] Insert error for table ${tableId}:`, error.message);
-                // CRITICAL: This log is now reachable. Check Vercel logs if rows are not inserted.
+                // Note: Stripe will retry if we return a non-200, but since we logged the event, 
+                // we'll proceed and log the failure. If retries fail, manual review is needed.
             } else {
                 console.log(`[BOOKING SUCCESS] Table ${tableId} booked for ${metadata.booking_date}`);
             }
