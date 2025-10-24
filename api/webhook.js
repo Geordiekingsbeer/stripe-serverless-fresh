@@ -29,16 +29,51 @@ async function getTenantDisplayName(tenantId) {
     return data.display_name;
 }
 
+// ----------------------------------------------------------------------------------
+// NEW FUNCTION: Sends the urgent refund alert to the customer.
+// ----------------------------------------------------------------------------------
+async function sendCustomerConflictAlert(booking, displayName) {
+    const customerEmail = booking.customer_email;
+    const senderEmail = 'info@dineselect.co';
+    const subject = `ACTION REQUIRED: Refund for your reservation at ${displayName} - Table Conflict`;
+    
+    const body = `
+        <p>Dear ${booking.customer_name || 'Customer'},</p>
+        <p style="color: red; font-weight: bold;">We sincerely apologize! There has been a rare double-booking conflict for your table at <b>${displayName}</b>.</p>
+        
+        <p>While your payment was successfully processed, the table was booked by another customer in the few moments you were at the checkout page. **Your booking for Table ${booking.table_id} on ${booking.date} at ${booking.start_time.substring(0, 5)} is unfortunately not secured.**</p>
+        
+        <p>We are processing a **full refund immediately**. It may take 5-10 business days to appear on your statement.</p>
+        
+        <p>Please visit the map again right now to select a new available table:</p>
+        <p><a href="https://book.dineselect.co/pick-seat.html">Choose a New Table</a></p>
+        
+        <p>Thank you for your understanding. We hope to see you soon!</p>
+    `;
+    
+    try {
+        await resend.emails.send({
+            from: senderEmail, to: customerEmail, subject: subject, html: body,
+        });
+        console.log(`Email Sent: Conflict alert sent to customer at ${customerEmail}.`);
+        return { success: true };
+    } catch (error) {
+        console.error('Email Error: Failed to send customer conflict alert:', error);
+        return { success: false, error: error.message };
+    }
+}
+// ----------------------------------------------------------------------------------
+
+
 // NOTE: This function's subject line is now unique for each booking time.
 async function sendBookingNotification(booking, type, displayName) {
     const staffEmail = 'geordie.kingsbeer@gmail.com';
     const senderEmail = 'info@dineselect.co';
     
     // Extract date and time for the subject line
-    const bookingDate = booking.date; // e.g., 2025-10-24
-    const bookingTime = booking.start_time.substring(0, 5); // e.g., 19:00
+    const bookingDate = booking.date;
+    const bookingTime = booking.start_time.substring(0, 5);
     
-    // Determine the subject based on success or failure type
     const isConflict = type === 'BOOKING CONFLICT FAIL';
     
     // NEW SUBJECT LINE: Includes Date and Time to prevent email client grouping
@@ -77,6 +112,7 @@ async function sendBookingNotification(booking, type, displayName) {
     }
 }
 
+// NOTE: sendCustomerConfirmation is now only used for the successful path
 async function sendCustomerConfirmation(booking, displayName) {
     const senderEmail = 'info@dineselect.co';
     const customerEmail = booking.customer_email;
@@ -292,12 +328,13 @@ export default async (req, res) => {
         } else {
             console.warn(`[T2 FAILURE LOG] Booking for ref ${metadata.booking_ref} failed due to conflict. Refund required.`);
             
+            // CRITICAL: Send conflict alert to customer
+            await sendCustomerConflictAlert(primaryBooking, tenantDisplayName); 
+            
             // Send urgent alert to staff indicating a refund is needed
             await sendBookingNotification(primaryBooking, 'BOOKING CONFLICT FAIL', tenantDisplayName);
             
-            // NOTE: We still send a generic confirmation to the customer for Stripe's sake, 
-            // but staff must execute the refund immediately.
-            await sendCustomerConfirmation(primaryBooking, tenantDisplayName); 
+            // NOTE: We do NOT send the generic success confirmation to the customer.
         }
     } // End of checkout.session.completed block
 
