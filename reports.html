@@ -193,26 +193,35 @@
             });
             
             // 4. Conversion Metrics (from tracking table)
-            const uniqueVisitors = new Set(tracking.map(t => t.booking_ref));
-            const totalCheckoutStarts = tracking.filter(t => t.checkout_started === 'TRUE').length;
-
-            const totalBookings = rawMetrics.total_paid_slots || 1; 
+            
+            // --- CRITICAL FIX: Filter out all 'checkout_completed = TRUE' rows ---
+            // This ensures the view count only uses the initial page load event.
+            const filteredTracking = tracking.filter(t => 
+                 t.checkout_completed !== 'TRUE' && t.checkout_completed !== true
+            );
+            
+            // Count unique booking_ref ONLY from the filtered list 
+            const uniqueVisitors = new Set(filteredTracking.map(t => t.booking_ref));
+            
+            // totalBookings is used for conversion rate denominator if linksViewed is 0
+            const totalBookings = rawMetrics.total_paid_slots || 1;    
 
             return {
                 financial: {
                     total_profit_pence: rawMetrics.total_profit_pence,
-                    avg_booking_value_pence: rawMetrics.total_profit_pence / (rawMetrics.total_paid_slots || 1), 
+                    avg_booking_value_pence: rawMetrics.total_profit_pence / (rawMetrics.total_paid_slots || 1),    
                     total_paid_bookings: rawMetrics.total_paid_slots,
                 },
                 daily: Array.from(rawMetrics.daily_sales_count).map(([dayOfWeek, data]) => ({
                     day_of_week: dayOfWeek,
                     avg_daily_profit_pence: data.total_profit / data.unique_dates.size,
-                })).sort((a, b) => new Date(a.day_of_week + ', 2000').getDay() - new Date(b.day_of_week + ', 2000').getDay()), 
+                })).sort((a, b) => new Date(a.day_of_week + ', 2000').getDay() - new Date(b.day_of_week + ', 2000').getDay()),    
                 
                 demand: rawMetrics.table_size_count,
                 funnel: {
+                    // This now accurately reflects 'initial views' by excluding the completed checkout event.
                     total_people_viewed_link: uniqueVisitors.size,
-                    total_checkout_started: totalCheckoutStarts,
+                    total_checkout_started: 0, // Checkout started metric removed
                 }
             };
         }
@@ -240,12 +249,12 @@
                 
                 
                 // --- MOCKING LAST MONTH DATA (Needed for trend calculation) ---
-                const lastMonthMetrics = { 
-                    total_profit_pence: 20000, 
+                const lastMonthMetrics = {    
+                    total_profit_pence: 20000,    
                     avg_booking_value_pence: 500,
                     total_people_viewed_link: 20,
                     total_paid_bookings: 3
-                }; 
+                };    
                 // ----------------------------------------------------
 
 
