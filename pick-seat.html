@@ -1177,7 +1177,7 @@
 	});
     
     // Party Size Prompt Handlers
-    document.getElementById('set-party-size').onclick = async () => {
+    document.getElementById('set-party-size').onclick = () => {
         const inputElement = document.getElementById('initial-party-size');
         const size = parseInt(inputElement.value);
         
@@ -1187,20 +1187,13 @@
         }
         
         CURRENT_PARTY_SIZE = size;
-        
-        // 1. HIDE THE MODAL (making the Konva container visible)
         document.getElementById('party-prompt-modal').style.display = 'none';
         
         const originalPartyInput = document.getElementById('party-size-hidden');
-        originalPartyInput.value = size; // Set hidden value
         originalPartyInput.type = 'hidden'; 
 
-        // 2. FORCE A RESIZE & REDRAW
-        resizeStage();
-        
-        // 3. Recalling the initialization sequence to load tables and apply filtering.
-        // We ensure loadTables runs, which internally calls loadBookings/updateTableVisuals.
-        await loadTables(); 
+        // Load bookings and update visuals after party size is set
+        loadBookings();
     };
 
     // Initialize the page by getting URL params and loading map data
@@ -1212,6 +1205,5 @@
 	</script>
 </body>
 </html>
-
 
 
