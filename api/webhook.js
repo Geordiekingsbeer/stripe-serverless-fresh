@@ -239,7 +239,7 @@ export default async (req, res) => {
         
         const { error: trackingUpdateError } = await supabase
             .from('engagement_tracking')
-            .update({ checkout_complete: 'TRUE', payment_successful: 'TRUE', event_type: 'payment_successful' })
+            .update({ checkout_completed: 'TRUE', payment_successful: 'TRUE', event_type: 'payment_successful' })
             .eq('booking_ref', metadata.booking_ref);
 
         if (trackingUpdateError) {
