@@ -29,8 +29,6 @@ async function getTenantDisplayName(tenantId) {
     return data.display_name;
 }
 
-// NOTE: The cleanNotes utility function has been removed as it was not used in the main flow
-
 async function sendCustomerConfirmation(booking, displayName) {
     const senderEmail = 'info@dineselect.co';
     const customerEmail = booking.customer_email;
@@ -38,7 +36,7 @@ async function sendCustomerConfirmation(booking, displayName) {
     const body = `
         <p>Dear ${booking.customer_name || 'Customer'},</p>
         <p>Your premium table reservation at <b>${displayName}</b> has been successfully confirmed and paid for.</p>
-        <p><strong>Reservation Details:</strong></p>
+        <p><strong>Reservation Details: (REFUND NEEDED)</strong></p>
         <ul>
             <li><strong>Restaurant:</strong> ${displayName}</li>
             <li><strong>Date:</strong> ${booking.date}</li>
@@ -67,19 +65,21 @@ async function sendBookingNotification(booking, type, displayName) {
     const staffEmail = 'geordie.kingsbeer@gmail.com';
     const senderEmail = 'info@dineselect.co';
     
-    const subject = `[NEW BOOKING - ${type}] ${displayName}: Table(s) ${booking.table_id}`;
+    // NOTE: This notification subject is updated to warn of a failure!
+    const subject = `[${type}] ${displayName}: Table(s) ${booking.table_id}`; 
     const body = `
-        <p>A new <b>${type}</b> booking has been confirmed for <b>${displayName}</b>.</p>
+        <p>A booking has been processed for <b>${displayName}</b>.</p>
         <p><strong>Customer:</strong> ${booking.customer_name || 'N/A'}</p>
         <ul>
             <li><strong>Party Size:</strong> ${booking.party_size || 'N/A'}</li>
             <li><strong>Table Number(s):</strong> ${booking.table_id}</li>
             <li><strong>Date:</strong> ${booking.date}</li>
             <li><strong>Time:</strong> ${booking.start_time} - ${booking.end_time}</li>
-            <li><strong>Source:</strong> ${type}</li>
+            <li><strong>Status:</strong> ${type}</li>
             <li><strong>Stripe Order ID:</strong> ${booking.host_notes.replace('Stripe Order: ', '')}</li>
             <li><strong>Customer Email:</strong> ${booking.customer_email || 'N/A'}</li>
         </ul>
+        ${type === 'BOOKING CONFLICT FAIL' ? '<h3 style="color:red;">ACTION REQUIRED: MANUAL REFUND VIA STRIPE IS NEEDED.</h3><p>The table was double-booked in the database, but the customer paid. The payment must be refunded immediately.</p>' : ''}
     `;
     
     try {
@@ -106,7 +106,6 @@ const getRawBody = (req) => {
 };
 
 export default async (req, res) => {
-    // CRITICAL: Log immediately to confirm handler is running
     console.log('--- WEBHOOK HANDLER ENTRY POINT ---'); 
 
     if (req.method !== 'POST') {
@@ -164,12 +163,10 @@ export default async (req, res) => {
 
         if (insertEventError) {
             console.error('[WEBHOOK_EVENTS FAILURE] CRITICAL: Failed to log new event:', insertEventError.message);
-            // We return 500 to signal Stripe to retry.
             return res.status(500).send(`Database Error: Could not log event ${eventId}`); 
         } else {
             console.log('[WEBHOOK_EVENTS SUCCESS] Event logged as processing.');
         }
-
 
         const totalAmountPence = session.amount_total;
         const tableIds = metadata.table_ids.split(','); 
@@ -203,6 +200,9 @@ export default async (req, res) => {
             booking_ref: metadata.booking_ref,
         };
         
+        // CRITICAL FLAG: Check if any booking attempt fails due to the database trigger
+        let allBookingsSuccessful = true;
+        
         // 3. Insert into premium_slots (CRITICAL BOOKING DATA)
         for (const tableId of tableIds) {
             console.log(`[PREMIUM_SLOTS DEBUG] Attempting insert for table ${tableId}...`);
@@ -227,7 +227,9 @@ export default async (req, res) => {
             
             if (error) {
                 console.error(`[PREMIUM_SLOTS FAILURE] Insert error for table ${tableId}:`, error.message);
-                // Continue to try and process other tables
+                // CRITICAL CHANGE: Mark the entire transaction as failed
+                allBookingsSuccessful = false; 
+                // Do NOT return here, continue trying to process other tables (if multi-table booking)
             } else {
                 console.log(`[PREMIUM_SLOTS SUCCESS] Table ${tableId} booked.`);
             }
@@ -236,41 +238,54 @@ export default async (req, res) => {
         // 4. Update Engagement Tracking (REMOVED)
         console.log('[TRACKING SKIPPED] Engagement tracking update skipped as requested.');
         
-        // 5. Send Notifications (Staff and Customer)
-        await sendBookingNotification(primaryBooking, 'CUSTOMER PAID', tenantDisplayName);
-        await sendCustomerConfirmation(primaryBooking, tenantDisplayName); 
-        
-        // 6. Insert into marketing_optins (Consent Data) - UNCHANGED FROM ORIGINAL
-        if (receiveOffers === 'TRUE' && customerEmail) {
-            const optInRow = {
-                email: customerEmail,
-                tenant_id: metadata.tenant_id,
-                booking_date: metadata.booking_date,
-                location: metadata.tenant_id,
-                source: metadata.booking_ref || 'table_booking',
-                consent_text: 'Send me restaurant discounts and offers',
-                is_subscribed: true
-            };
-            
-            const { error: optinError } = await supabase
-                .from('marketing_optins')
-                .upsert([optInRow], { onConflict: 'email, tenant_id' });
+        // 5. Send Notifications (Staff and Customer) - CONDITIONAL EXECUTION
+        if (allBookingsSuccessful) {
+             await sendBookingNotification(primaryBooking, 'CUSTOMER PAID', tenantDisplayName);
+             await sendCustomerConfirmation(primaryBooking, tenantDisplayName); 
+             console.log('User notified of successful booking.');
+             
+             // 6. Insert into marketing_optins (Consent Data) - Only on success
+             if (receiveOffers === 'TRUE' && customerEmail) {
+                const optInRow = {
+                    email: customerEmail,
+                    tenant_id: metadata.tenant_id,
+                    booking_date: metadata.booking_date,
+                    location: metadata.tenant_id,
+                    source: metadata.booking_ref || 'table_booking',
+                    consent_text: 'Send me restaurant discounts and offers',
+                    is_subscribed: true
+                };
+                
+                const { error: optinError } = await supabase
+                    .from('marketing_optins')
+                    .upsert([optInRow], { onConflict: 'email, tenant_id' });
 
-            if (optinError) {
-                console.error('Error inserting marketing opt-in:', optinError);
+                if (optinError) {
+                    console.error('Error inserting marketing opt-in:', optinError);
+                }
             }
-        }
 
-        // 7. Update event log status to 'complete'
-        const { error: updateError } = await supabase
-            .from('webhook_events')
-            .update({ status: 'completed' })
-            .eq('stripe_event_id', eventId);
-        
-        if (updateError) {
-            console.error('Failed to mark webhook_event as completed:', updateError.message);
-        }
+             // 7. Update webhook_events status to 'completed'
+             const { error: updateError } = await supabase
+                .from('webhook_events')
+                .update({ status: 'completed' })
+                .eq('stripe_event_id', eventId);
+             
+             if (updateError) {
+                 console.error('Failed to mark webhook_event as completed:', updateError.message);
+             }
 
+        } else {
+            console.warn(`[T2 FAILURE LOG] Booking for ref ${metadata.booking_ref} failed due to conflict. No confirmation email sent to customer.`);
+            
+            // Send urgent alert to staff indicating a refund is needed
+            await sendBookingNotification(primaryBooking, 'BOOKING CONFLICT FAIL', tenantDisplayName);
+            
+            // NOTE: We do NOT send a success confirmation to the customer.
+            
+            // We still return 200 to Stripe, confirming we processed their webhook, 
+            // even though the DB update failed (Stripe is not responsible for the conflict).
+        }
     } // End of checkout.session.completed block
 
     // 8. Return success to Stripe (Final Step)
