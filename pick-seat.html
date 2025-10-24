@@ -1033,6 +1033,11 @@
             return;
         }
 
+        // NOTE: Tracking logic removed here to stop logging 'checkout_started'
+
+		customerModal.style.display = 'flex';
+	};
+
 		if (URL_PARAMS.booking_ref) {
             const trackingEvent = {
                 tenant_id: URL_PARAMS.tenant_id,
