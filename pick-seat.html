@@ -1025,7 +1025,7 @@
 			updateTableVisuals();
 			return;
 		}
-        
+        	
         // Final Check 1: Check for EXCESSIVE capacity before opening the payment modal
         const totalCapacity = getSelectedTablesCapacity();
         if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
@@ -1033,12 +1033,8 @@
             return;
         }
 
-		if (URL_PARAMS.booking_ref) {
-            const trackingEvent = {
-                tenant_id: URL_PARAMS.tenant_id,
-                booking_ref: URL_PARAMS.booking_ref,
-                checkout_started: 'TRUE',
-            };
+		customerModal.style.display = 'flex';
+	};
             
             const { error } = await _supa
                 .from('engagement_tracking')
