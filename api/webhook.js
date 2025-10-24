@@ -29,8 +29,6 @@ async function getTenantDisplayName(tenantId) {
     return data.display_name;
 }
 
-// NOTE: The cleanNotes utility function has been removed as it was not used in the main flow
-
 async function sendCustomerConfirmation(booking, displayName) {
     const senderEmail = 'info@dineselect.co';
     const customerEmail = booking.customer_email;
@@ -106,7 +104,6 @@ const getRawBody = (req) => {
 };
 
 export default async (req, res) => {
-    // CRITICAL: Log immediately to confirm handler is running
     console.log('--- WEBHOOK HANDLER ENTRY POINT ---'); 
 
     if (req.method !== 'POST') {
@@ -164,7 +161,6 @@ export default async (req, res) => {
 
         if (insertEventError) {
             console.error('[WEBHOOK_EVENTS FAILURE] CRITICAL: Failed to log new event:', insertEventError.message);
-            // We return 500 to signal Stripe to retry.
             return res.status(500).send(`Database Error: Could not log event ${eventId}`); 
         } else {
             console.log('[WEBHOOK_EVENTS SUCCESS] Event logged as processing.');
@@ -227,7 +223,6 @@ export default async (req, res) => {
             
             if (error) {
                 console.error(`[PREMIUM_SLOTS FAILURE] Insert error for table ${tableId}:`, error.message);
-                // Continue to try and process other tables
             } else {
                 console.log(`[PREMIUM_SLOTS SUCCESS] Table ${tableId} booked.`);
             }
