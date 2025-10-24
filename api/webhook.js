@@ -41,9 +41,9 @@ async function sendCustomerConflictAlert(booking, displayName) {
         <p>Dear ${booking.customer_name || 'Customer'},</p>
         <p style="color: red; font-weight: bold;">We sincerely apologize! There has been a rare double-booking conflict for your table at <b>${displayName}</b>.</p>
         
-        <p>While your payment was successfully processed, the table was booked by another customer in the few moments you were at the checkout page. **Your booking for Table ${booking.table_id} on ${booking.date} at ${booking.start_time.substring(0, 5)} is unfortunately not secured.**</p>
+        <p>While your payment was successfully processed, the table was booked by another customer in the few moments you were at the checkout page. Your booking for Table ${booking.table_id} on ${booking.date} at ${booking.start_time.substring(0, 5)} is unfortunately not secured.</p>
         
-        <p>We are processing a **full refund immediately**. It may take 5-10 business days to appear on your statement.</p>
+        <p>We are processing a full refund immediately. It may take 5-10 business days to appear on your statement.</p>
         
         <p>Please visit the map again right now to select a new available table:</p>
         <p><a href="https://book.dineselect.co/pick-seat.html">Choose a New Table</a></p>
