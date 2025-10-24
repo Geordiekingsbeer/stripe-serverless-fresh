@@ -228,8 +228,21 @@ export default async (req, res) => {
             }
         }
         
-        // 4. Update Engagement Tracking (REMOVED)
-        console.log('[TRACKING SKIPPED] Engagement tracking update skipped as requested.');
+        // 4. Update Engagement Tracking (PAYMENT COMPLETE)
+        const { error: trackingUpdateError } = await supabase
+            .from('engagement_tracking')
+            .update({ 
+                checkout_completed: 'TRUE',
+                payment_successful: 'TRUE',
+                event_type: 'payment_successful'
+            })
+            .eq('booking_ref', metadata.booking_ref);
+
+        if (trackingUpdateError) {
+            console.error('[TRACKING FAILURE] Failed to update engagement_tracking:', trackingUpdateError.message);
+        } else {
+            console.log(`[TRACKING SUCCESS] Ref ${metadata.booking_ref} marked as complete.`);
+        }
         
         // 5. Send Notifications (Staff and Customer)
         await sendBookingNotification(primaryBooking, 'CUSTOMER PAID', tenantDisplayName);
