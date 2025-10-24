@@ -1025,19 +1025,20 @@
 			updateTableVisuals();
 			return;
 		}
-        
-        // Final Check 1: Check for EXCESSIVE capacity before opening the payment modal
-        const totalCapacity = getSelectedTablesCapacity();
-        if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
-            alert(`Error: Your party of ${CURRENT_PARTY_SIZE} cannot reserve tables with a combined capacity of ${totalCapacity}. Please reduce the number of selected tables.`);
-            return;
-        }
+        
+        // Final Check 1: Check for EXCESSIVE capacity before opening the payment modal
+        const totalCapacity = getSelectedTablesCapacity();
+        if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
+            alert(`Error: Your party of ${CURRENT_PARTY_SIZE} cannot reserve tables with a combined capacity of ${totalCapacity}. Please reduce the number of selected tables.`);
+            return;
+        }
 
-        // REMOVED TRACKING BLOCK (The original `if (URL_PARAMS.booking_ref) { ... }` block)
-        // No longer logging 'checkout_started' to engagement_tracking.
-
-		customerModal.style.display = 'flex';
-	};
+		if (URL_PARAMS.booking_ref) {
+            const trackingEvent = {
+                tenant_id: URL_PARAMS.tenant_id,
+                booking_ref: URL_PARAMS.booking_ref,
+                checkout_started: 'TRUE',
+            };
             
             const { error } = await _supa
                 .from('engagement_tracking')
@@ -1199,5 +1200,6 @@
 	</script>
 </body>
 </html>
+
 
 
