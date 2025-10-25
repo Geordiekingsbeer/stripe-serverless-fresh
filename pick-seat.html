@@ -1019,18 +1019,19 @@
 		// --- NEW: TIMEZONE-AWARE LEAD TIME CHECK (Based on London Time) ---
         
         // 1. Get the current time in the Restaurant's Timezone (London)
-        // This is necessary to avoid relying on the customer's clock if they are abroad.
-		const nowLondonTime = new Date().toLocaleString("en-US", {timeZone: RESTAURANT_TIMEZONE});
-		const currentMomentLondon = new Date(nowLondonTime).getTime(); // Current time in MS (London reference)
-
-        // 2. Calculate the requested booking time's position in milliseconds
-        // This time is interpreted based on the local system's offset, but we compare the difference.
+        // We use getTime() which returns UTC milliseconds since epoch.
+		const nowLondonMs = new Date(new Date().toLocaleString("en-US", { timeZone: RESTAURANT_TIMEZONE })).getTime();
+        
+        // 2. Get the requested booking time's millisecond value
+        // We combine the date and time strings and convert them to the millisecond value.
 		const bookingDateTimeString = `${selectedDate}T${selectedTime}:00`;
-		const bookingMomentLocal = new Date(bookingDateTimeString).getTime(); // Booking time in MS
+		const bookingMomentMs = new Date(bookingDateTimeString).getTime();
 
-        // 3. For an accurate comparison, we must ensure both are treated equally.
-        // If the difference is less than the lead time, block the booking.
-        if (bookingMomentLocal - currentMomentLondon < MINIMUM_LEAD_TIME_MS) {
+        // 3. Calculate the difference (Time remaining)
+        const timeRemainingMs = bookingMomentMs - nowLondonMs;
+
+
+        if (timeRemainingMs < MINIMUM_LEAD_TIME_MS) {
 			alert('Premium tables must be selected at least 3 hours (180 minutes) in advance, based on London time. Please select an earlier date or a later time.');
 			return; // Block execution
 		}
