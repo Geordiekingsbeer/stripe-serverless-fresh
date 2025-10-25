@@ -33,12 +33,10 @@ function calculateBookingEndTime(bookingDate, startTime) {
  */
 async function createReservationHold(tableIds, tenantId, bookingRef, bookingDate, startTime, endTime) {
     const tableIdArray = tableIds.map(id => Number(id));
+    // Hold is set for 5 minutes
     const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000).toISOString();
     
-    // 1. Check for current active holds for any of the selected tables
-    // We rely on the database's UNIQUNESS CONSTRAINT for permanent bookings, 
-    // but we use a filter here to check against temporary holds.
-    
+    // 1. Check for current active holds for the specific date
     const { data: existingHolds, error: checkError } = await supabase
         .from('reserved_holds')
         .select('table_id')
@@ -54,7 +52,6 @@ async function createReservationHold(tableIds, tenantId, bookingRef, bookingDate
     
     if (existingHolds && existingHolds.length > 0) {
         // Conflict found: Table is held by another customer for the same date.
-        // We rely on the client-side check to ensure the *time* does not overlap.
         return { isConflict: true, conflictingTableId: existingHolds[0].table_id };
     }
 
@@ -64,9 +61,9 @@ async function createReservationHold(tableIds, tenantId, bookingRef, bookingDate
         tenant_id: tenantId,
         expires_at: fiveMinutesFromNow,
         booking_ref: bookingRef,
-        date: bookingDate, // NEW: Record the booking date
-        start_time: startTime, // NEW: Record the booking start time
-        end_time: endTime, // NEW: Record the booking end time
+        date: bookingDate, 
+        start_time: startTime, 
+        end_time: endTime, 
     }));
 
     const { error: insertError } = await supabase
@@ -111,6 +108,7 @@ export default async (req, res) => {
             receive_offers
         } = req.body;
         
+        // --- Input Validation ---
         if (!table_ids || total_pence <= 0 || !email) {
             return res.status(400).json({ error: 'Missing required data: tables, price, or email.' });
         }
@@ -123,9 +121,9 @@ export default async (req, res) => {
             table_ids, 
             tenant_id, 
             booking_ref, 
-            booking_date, // NEW: Pass date
-            booking_time, // NEW: Pass start time
-            calculatedEndTime // NEW: Pass end time
+            booking_date, 
+            booking_time, 
+            calculatedEndTime
         );
 
         if (holdResult.isConflict) {
@@ -138,22 +136,30 @@ export default async (req, res) => {
         }
         // --- END HOLD ---
 
+        // --- Define Stripe Line Item ---
         const lineItem = {
             price_data: {
                 currency: 'gbp',    
-                // ... (rest of lineItem remains)
+                product_data: {
+                    name: `Premium Table Reservation (${table_ids.length} Table${table_ids.length > 1 ? 's' : ''})`,
+                    description: `Tables: ${table_ids.join(', ')} | Date: ${booking_date} | Time: ${booking_time}.`,
+                },
+                unit_amount: total_pence, // Total pence calculated from frontend
             },
             quantity: 1,
         };
+        // --- End Line Item Definition ---
 
         const session = await stripe.checkout.sessions.create({
-            // ... (payment_method_types, line_items, mode, customer_email)
+            payment_method_types: ['card'],
+            line_items: [lineItem],
+            mode: 'payment',
+            customer_email: email,    
             
             metadata: {
                 table_ids: table_ids.join(','),
                 booking_date: booking_date,
                 booking_time: booking_time,
-                // CRITICAL: Stripe metadata is now updated with the calculated end time
                 booking_end_time: calculatedEndTime, 
                 customer_name: customer_name,
                 party_size: party_size.toString(),
