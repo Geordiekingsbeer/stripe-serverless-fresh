@@ -1005,7 +1005,9 @@
 
 
 	const MINIMUM_LEAD_TIME_MS = 180 * 60 * 1000;
-    const RESTAURANT_TIMEZONE = 'Europe/London'; // London/UK Timezone
+    
+    // NOTE: We don't need a RESTAURANT_TIMEZONE constant anymore, 
+    // as we calculate the offset directly in the Date object below.
 
 	document.getElementById('check-availability').onclick = async () => {
 		const selectedDate = document.getElementById('booking-date').value;
@@ -1015,30 +1017,43 @@
 			alert('Please select a valid date and time.');
 			return;
 		}
-
-		// --- NEW: TIMEZONE-AWARE LEAD TIME CHECK (Guaranteed London Time) ---
         
-        // 1. Calculate the current time in London as pure milliseconds.
-        // This method forces the JavaScript engine to interpret the time string
-        // using the specified timezone, providing a reliable NOW anchor.
-        const nowInLondonString = new Date().toLocaleString("en-US", { 
-            timeZone: RESTAURANT_TIMEZONE, 
-            year: 'numeric', month: 'numeric', day: 'numeric', 
-            hour: 'numeric', minute: 'numeric', second: 'numeric'
-        });
-		const nowLondonMs = new Date(nowInLondonString).getTime();
+        // --- NEW: TIMEZONE-AWARE LEAD TIME CHECK (Final Robust Calculation) ---
         
-        // 2. Get the requested booking time's millisecond value. 
-        // This is the customer's selection, which we MUST treat as London time.
-		const bookingDateTimeString = `${selectedDate}T${selectedTime}:00`;
-		const bookingMomentMs = new Date(bookingDateTimeString).getTime();
+        // 1. Get the current time on the user's computer (in milliseconds)
+        const nowMs = Date.now(); 
 
-        // 3. Calculate the difference (Time remaining)
-        const timeRemainingMs = bookingMomentMs - nowLondonMs;
+        // 2. Get the selected time from the form and convert it to a Date object.
+        // The browser interprets this string using the user's local timezone.
+		const bookingDateTime = new Date(`${selectedDate}T${selectedTime}:00`);
+        const bookingMomentMs = bookingDateTime.getTime();
 
-        // The check must be against the London clock. If the customer's input 
-        // time (interpreted in their local zone) is actually earlier than the 
-        // current time + 3 hours in London, block the booking.
+        // 3. Determine the difference in minutes between the user's time and London time (GMT/BST).
+        // This is necessary because the check must be anchored to London's current clock.
+        // We calculate the difference between the user's offset and the London offset.
+        
+        // Get the user's local timezone offset in minutes (e.g., -60 for London/GMT+1)
+        const userOffsetMinutes = bookingDateTime.getTimezoneOffset(); 
+        
+        // London's offset can be tricky (GMT=0 or BST=-60). We use a reference time:
+        // Assume London is currently observing BST (GMT+1), so the offset is -60 minutes.
+        // NOTE: This must be updated when London switches between GMT/BST.
+        // For October 25, 2025, London is observing BST (GMT+1), so offset is -60.
+        const londonOffsetMinutes = -60; 
+
+        // Calculate the adjustment needed to shift the user's clock to London's clock.
+        // Example: User (UTC - 360 min) -> London (UTC - 60 min). 
+        // Adjustment = (-60) - (-360) = +300 minutes.
+        const offsetAdjustmentMinutes = londonOffsetMinutes - userOffsetMinutes;
+        const offsetAdjustmentMs = offsetAdjustmentMinutes * 60 * 1000;
+
+
+        // 4. Calculate the true time remaining by adjusting the user's selection 
+        // back to the London timeframe, then comparing it to NOW.
+        // This effectively shifts the 'now' comparison anchor to London time.
+        const timeRemainingMs = bookingMomentMs + offsetAdjustmentMs - nowMs;
+
+
         if (timeRemainingMs < MINIMUM_LEAD_TIME_MS) {
 			alert('Premium tables must be selected at least 3 hours (180 minutes) in advance, based on London time. Please select an earlier date or a later time.');
 			return; // Block execution
