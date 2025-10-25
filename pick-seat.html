@@ -1076,11 +1076,10 @@
 	payBtn.onclick = async () => {
 		if (selectedTableIds.length === 0) return;
 		
-        // Set the hidden party size field for the checkout modal
-        document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
-        // Optionally update placeholder text in modal for clarity
-        document.getElementById('party-size-hidden').placeholder = `Party Size (${CURRENT_PARTY_SIZE})`;
-		
+        // CONSTANTS (Local to this function)
+        const MINIMUM_LEAD_TIME_MS = 180 * 60 * 1000; // 3 hours
+        const RESTAURANT_TIMEZONE = 'Europe/London'; 
+        
 		const selectedDate = document.getElementById('booking-date').value;
 		const selectedTime = document.getElementById('booking-time').value;
 
@@ -1089,7 +1088,38 @@
 			return;
 		}
 
-		await loadBookings();
+        // --- NEW: LEAD TIME VALIDATION CHECK ---
+        
+        // 1. Get current time in London as a millisecond reference.
+        // This method forces the interpretation to the target timezone.
+        const nowLondonString = new Date().toLocaleString("en-US", { 
+            timeZone: RESTAURANT_TIMEZONE, 
+            year: 'numeric', month: 'numeric', day: 'numeric', 
+            hour: 'numeric', minute: 'numeric', second: 'numeric'
+        });
+		const nowLondonMs = new Date(nowLondonString).getTime();
+        
+        // 2. Get the customer's selected time as a millisecond value.
+		const bookingDateTimeString = `${selectedDate}T${selectedTime}:00`;
+		const bookingMomentMs = new Date(bookingDateTimeString).getTime();
+
+        // 3. Calculate the time difference (remaining time)
+        const timeRemainingMs = bookingMomentMs - nowLondonMs;
+
+        if (timeRemainingMs < MINIMUM_LEAD_TIME_MS) {
+			alert('Validation Error: Premium tables must be selected at least 3 hours (180 minutes) in advance, based on London time.');
+			return; // BLOCK CHECKOUT
+		}
+        // --- END LEAD TIME VALIDATION ---
+
+        // Set the hidden party size field for the checkout modal
+        document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
+        // Optionally update placeholder text in modal for clarity
+        document.getElementById('party-size-hidden').placeholder = `Party Size (${CURRENT_PARTY_SIZE})`;
+		
+		// ... (Rest of existing checks: loadBookings, isAnySelectedTableBooked, isWastedCapacityAllowedForBooking)
+
+		await loadBookings(); // Reload bookings one last time to ensure no new conflicts
 		
 		const isAnySelectedTableBooked = selectedTableIds.some(id => {
 			const group = layer.findOne('#g-' + id);
@@ -1101,27 +1131,13 @@
 			updateTableVisuals();
 			return;
 		}
-        
-        // Final Check 1: Check for EXCESSIVE capacity before opening the payment modal
-        const totalCapacity = getSelectedTablesCapacity();
-        if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
-            alert(`Error: Your party of ${CURRENT_PARTY_SIZE} cannot reserve tables with a combined capacity of ${totalCapacity}. Please reduce the number of selected tables.`);
-            return;
-        }
-
-		if (URL_PARAMS.booking_ref) {
-            const trackingEvent = {
-                tenant_id: URL_PARAMS.tenant_id,
-                booking_ref: URL_PARAMS.booking_ref,
-                checkout_started: 'TRUE',
-            };
-            
-            const { error } = await _supa
-                .from('engagement_tracking')
-                .upsert([trackingEvent], { onConflict: 'booking_ref' }); 
-
-			if (error) console.error('Tracking Error (Checkout Start):', error);
-		}
+        
+        // Final Check 1: Check for EXCESSIVE capacity before opening the payment modal
+        const totalCapacity = getSelectedTablesCapacity();
+        if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
+            alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${totalCapacity}.`);
+            return;
+        }
 
 		customerModal.style.display = 'flex';
 	};
