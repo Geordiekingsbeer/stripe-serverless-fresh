@@ -1163,38 +1163,27 @@
 		}
 	});
     	
-    // Party Size Prompt Handlers
-    document.getElementById('set-party-size').onclick = async () => {
-        const inputElement = document.getElementById('initial-party-size');
-        const size = parseInt(inputElement.value);
-        	
-        if (isNaN(size) || size < 1) {
-            alert("Please enter a valid party size (1 or greater).");
-            return;
+    (async () => {
+        getUrlParams();
+        logInitialClick();
+        
+        // CRITICAL FIX: Set party size from URL or default to 1
+        let urlPartySize = parseInt(URL_PARAMS.party_size);
+        if (isNaN(urlPartySize) || urlPartySize < 1) {
+            urlPartySize = 1; // Default to 1 if size is corrupted or missing
         }
-        	
-        CURRENT_PARTY_SIZE = size;
-        document.getElementById('party-prompt-modal').style.display = 'none';
-        	
-        const originalPartyInput = document.getElementById('party-size-hidden');
-        originalPartyInput.value = size; 
-        originalPartyInput.type = 'hidden';	
+        CURRENT_PARTY_SIZE = urlPartySize;
 
-        // Load tables and bookings now that party size is known and container is visible
-        await loadTables(); 
-        await loadBookings();
-    };
+        // Auto-close prompt and load map (since we now have party size)
+        document.getElementById('party-prompt-modal').style.display = 'none'; 
 
-    // Initialize the page by getting URL params and loading map data
-    getUrlParams();
-    logInitialClick();	
-    window.addEventListener('resize', resizeStage);
-    loadFloorplan(loadTables);
+        // Set the hidden party size field for the payment modal to use the autodetected size
+        document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
+
+        // Now load the map instantly
+        window.addEventListener('resize', resizeStage);
+        loadFloorplan(loadTables);
+    })();
 	</script>
 </body>
 </html>
-
-
-
-
-
