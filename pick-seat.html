@@ -1150,14 +1150,12 @@
         await loadBookings();
     };
 
-    // Initialize the page by getting URL params and loading map data
-    (async () => {
-        getUrlParams();
-        logInitialClick();
-        window.addEventListener('resize', resizeStage);
-        loadFloorplan(loadTables);
-		})();
-	</script>
+    getUrlParams();	
+logInitialClick();	
+window.addEventListener('resize', resizeStage);	
+loadFloorplan(loadTables);	
+})();	
+</script>
 </body>
 </html>
 
