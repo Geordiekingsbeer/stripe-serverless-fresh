@@ -609,41 +609,65 @@
 	}
 
 	async function loadBookings() {
-        if (!URL_PARAMS.tenant_id) return false; 
+    if (!URL_PARAMS.tenant_id) return false;	
 
-		const selectedDateSupabase = document.getElementById('booking-date').value;
-		const selectedTime = document.getElementById('booking-time').value;
+    const selectedDateSupabase = document.getElementById('booking-date').value;
+    const selectedTime = document.getElementById('booking-time').value;
 
-		if (!selectedDateSupabase || !selectedTime) {
-			currentBookings = [];	
-			updateTableVisuals();
-			return false;
-		}
+    if (!selectedDateSupabase || !selectedTime) {
+        currentBookings = [];	
+        updateTableVisuals();
+        return false;
+    }
+    
+    // --- STEP 1: Fetch Permanent Bookings (premium_slots) ---
+    const slotsPromise = _supa
+        .from('premium_slots')	
+        .select('*')
+        .eq('date', selectedDateSupabase);
+        
+    // --- STEP 2: Fetch Active Temporary Holds (reserved_holds) ---
+    // NOTE: We only need to check holds that expire AFTER the current time
+    const holdsPromise = _supa
+        .from('reserved_holds')
+        .select('table_id')
+        .gte('expires_at', new Date().toISOString())
+        .filter('tenant_id', 'eq', URL_PARAMS.tenant_id);
 
-		const { data, error } = await _supa
-			.from('premium_slots')	
-			.select('*')
-			.eq('date', selectedDateSupabase); 
-			
-		if(error){	
-			console.error('Error fetching bookings:', error);	
-			alert('Could not check availability. Try again later.');	
-			currentBookings = [];	
-			return false;
-		}	
+    const [slotsResult, holdsResult] = await Promise.all([slotsPromise, holdsPromise]);
 
-		const selectedTimeMinutes = timeToMinutes(selectedTime);	
+    if(slotsResult.error || holdsResult.error){	
+        console.error('Error fetching data:', slotsResult.error || holdsResult.error);	
+        alert('Could not check availability. Try again later.');	
+        currentBookings = [];	
+        return false;
+    }	
 
-		currentBookings = data.filter(b => {
-			const bookingStartMinutes = timeToMinutes(b.start_time);
-			const bookingEndMinutes = timeToMinutes(b.end_time);
-			
-			return selectedTimeMinutes >= bookingStartMinutes && selectedTimeMinutes < bookingEndMinutes;
-		});
+    const selectedTimeMinutes = timeToMinutes(selectedTime);	
+    
+    // Get list of currently held tables
+    const heldTableIds = new Set(holdsResult.data.map(h => h.table_id));
 
-		updateTableVisuals();
-		return true;
-	}
+    // Filter permanent bookings by time overlap
+    currentBookings = slotsResult.data.filter(b => {
+        const bookingStartMinutes = timeToMinutes(b.start_time);
+        const bookingEndMinutes = timeToMinutes(b.end_time);
+        
+        return selectedTimeMinutes >= bookingStartMinutes && selectedTimeMinutes < bookingEndMinutes;
+    });
+    
+    // Add held tables to the booked list for visual gray-out
+    heldTableIds.forEach(id => {
+        // Ensure the held table isn't already marked as booked by a permanent slot
+        if (!currentBookings.some(b => Number(b.table_id) === id)) {
+            // Add temporary placeholder object for the held table
+            currentBookings.push({ table_id: id, is_held: true }); 
+        }
+    });
+
+    updateTableVisuals();
+    return true;
+}
 
 
 	function updateTableVisuals() {
