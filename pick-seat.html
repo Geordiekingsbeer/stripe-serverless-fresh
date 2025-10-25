@@ -260,6 +260,18 @@
 			border-radius: 5px;
 			box-sizing: border-box;
 		}
+		#tos-checkbox-group {
+    margin-top: 10px;
+    margin-bottom: 25px; 
+}
+#tos-checkbox-group label {
+    font-size: 13px; /* Slightly smaller text for legal notices */
+    line-height: 1.2;
+    vertical-align: top;
+    padding-top: 2px;
+    display: inline-block;
+    width: calc(100% - 30px); /* Adjust width to make room for checkbox */
+}
 		
         /* --- FINAL MODAL STYLING FIXES --- */
         
@@ -360,6 +372,13 @@
 				<input type="text" id="customer-name" placeholder="Full Name" required>
 				<input type="number" id="party-size-hidden" placeholder="Party Size (e.g., 4)" min="1" required>
 				<input type="email" id="customer-email" placeholder="Email for Receipt" required>
+				<div class="optin-group" id="tos-checkbox-group">
+    <input type="checkbox" id="terms-of-service" required>
+    <label for="terms-of-service" style="font-weight: 500;">
+        I agree to the Terms of Service and acknowledge the Strict Liability Limit on refunds which can be read 
+        <a href="https://dine-select.com" target="_blank" style="color: #1976d2; text-decoration: underline;">here</a>.
+    </label>
+</div>
 
                 <div class="optin-group">
                     <input type="checkbox" id="future-offers-optin">
