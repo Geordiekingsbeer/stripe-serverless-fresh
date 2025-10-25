@@ -729,7 +729,8 @@
     // --- STEP 2: Fetch Active Temporary Holds (reserved_holds) ---
     const holdsPromise = _supa
         .from('reserved_holds')
-        .select('table_id')
+        .select('*') // CRITICAL: Select all columns
+        .eq('date', currentSelectedDate) // CRITICAL: Filter by specific date
         .gte('expires_at', new Date().toISOString())
         .filter('tenant_id', 'eq', CURRENT_TENANT_ID);
 
@@ -744,9 +745,6 @@
 
     const selectedTimeMinutes = timeToMinutes(currentSelectedTime);	
     
-    // Get list of currently held tables
-    const heldTableIds = new Set(holdsResult.data.map(h => h.table_id));
-
     // Filter permanent bookings by time overlap
     currentBookings = slotsResult.data.filter(b => {
         const bookingStartMinutes = timeToMinutes(b.start_time);
@@ -755,17 +753,24 @@
         return selectedTimeMinutes >= bookingStartMinutes && selectedTimeMinutes < bookingEndMinutes;
     });
     
-    // Add held tables to the currentBookings list as placeholder objects
-    heldTableIds.forEach(id => {
-        if (!currentBookings.some(b => Number(b.table_id) === id)) {
-            // Add a placeholder object with a special flag for holds
-            currentBookings.push({ 
-                table_id: id, 
-                is_held: true,
-                start_time: 'HOLD', 
-                end_time: 'HOLD',
-                host_notes: '5-MINUTE CHECKOUT HOLD'
-            }); 
+    // Filter holds by time overlap and add them to currentBookings
+    holdsResult.data.forEach(h => {
+        const holdStartMinutes = timeToMinutes(h.start_time);
+        const holdEndMinutes = timeToMinutes(h.end_time);
+
+        const timeOverlaps = selectedTimeMinutes >= holdStartMinutes && selectedTimeMinutes < holdEndMinutes;
+
+        if (timeOverlaps) {
+            // Only add the hold if no permanent booking already exists for this table/slot
+            if (!currentBookings.some(b => Number(b.table_id) === h.table_id)) {
+                currentBookings.push({ 
+                    table_id: h.table_id, 
+                    is_held: true,
+                    start_time: h.start_time,
+                    end_time: h.end_time,
+                    host_notes: `5-MINUTE CHECKOUT HOLD (Expires: ${new Date(h.expires_at).toLocaleTimeString()})`
+                }); 
+            }
         }
     });
     
