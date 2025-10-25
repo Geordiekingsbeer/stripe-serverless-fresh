@@ -1151,10 +1151,12 @@
     };
 
     // Initialize the page by getting URL params and loading map data
-    getUrlParams();
-    logInitialClick();	
-    window.addEventListener('resize', resizeStage);
-    loadFloorplan(loadTables);
+    (async () => {
+        getUrlParams();
+        logInitialClick();
+        window.addEventListener('resize', resizeStage);
+        loadFloorplan(loadTables);
+		})();
 	</script>
 </body>
 </html>
