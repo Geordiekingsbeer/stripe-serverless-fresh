@@ -480,25 +480,38 @@
     }
 	
     function getUrlParams() {
-        const urlParams = new URLSearchParams(window.location.search);
-        	
-        URL_PARAMS.tenant_id = urlParams.get('tenant_id');
-        URL_PARAMS.booking_ref = urlParams.get('booking_ref');
-        URL_PARAMS.source = urlParams.get('source');
-        
-        // --- CRITICAL FIX: ASSIGN RAW URL VALUES DIRECTLY (No more parsing) ---
-        URL_PARAMS.booking_date = urlParams.get('booking_date');
-        URL_PARAMS.booking_time = urlParams.get('booking_time');
-        // --------------------------------------------------------------------
+    const urlParams = new URLSearchParams(window.location.search);
+    	
+    URL_PARAMS.tenant_id = urlParams.get('tenant_id');
+    URL_PARAMS.booking_ref = urlParams.get('booking_ref');
+    URL_PARAMS.source = urlParams.get('source');
+    // Capture booking details directly from URL
+    URL_PARAMS.booking_date = urlParams.get('booking_date');
+    URL_PARAMS.booking_time = urlParams.get('booking_time');
+    
+    // CRITICAL FIX: Capture party size and attempt to parse it immediately
+    const partySizeParam = urlParams.get('party_size');
 
-        if (!URL_PARAMS.tenant_id) {
-             URL_PARAMS.tenant_id = 'R-VERIFIED-Z99';
-        }
-        	
-        if (!URL_PARAMS.booking_ref) {
-             URL_PARAMS.booking_ref = generateUniqueId();
-        }
+    // Convert party size to integer and validate (defaulting to 1 if missing or invalid)
+    let parsedPartySize = parseInt(partySizeParam);
+
+    if (isNaN(parsedPartySize) || parsedPartySize < 1) {
+        parsedPartySize = 1; 
     }
+    
+    URL_PARAMS.party_size = parsedPartySize;
+    
+    // Set the GLOBAL party size variable immediately upon reading the URL
+    CURRENT_PARTY_SIZE = parsedPartySize;
+
+    if (!URL_PARAMS.tenant_id) {
+         URL_PARAMS.tenant_id = 'R-VERIFIED-Z99';
+    }
+    	
+    if (!URL_PARAMS.booking_ref) {
+         URL_PARAMS.booking_ref = generateUniqueId();
+    }
+}
     	
     function getSelectedTablesCapacity() {
         let maxCapacity = 0;
