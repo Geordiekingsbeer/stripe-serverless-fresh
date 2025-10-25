@@ -303,43 +303,48 @@
 }
 	
 #future-offers-optin {
-    width: auto !important;
-    margin-right: 10px !important; 
-    vertical-align: middle; 
-    /* INCREASED THE DOWNWARD SHIFT TO 2px */
-    position: relative;
-    top: 6px; 
+    width: auto !important;
+    margin-right: 10px !important; 
+    vertical-align: middle;
+    /* We removed position: relative; top: 6px; here */
 }
 
-		#terms-of-service { /* NEW ID FOR THE TERMS CHECKBOX */
+/* ---------------------------------------------------- */
+/* CRITICAL FIX: The new mandatory checkbox */
+/* ---------------------------------------------------- */
+#terms-of-service { 
     width: auto !important;
     margin-right: 10px !important;
     vertical-align: middle;
-    /* Apply the necessary alignment fix */
-    position: relative;
-    top: 6px; 
+    /* We do NOT use position: relative; top: 6px; */
 }
 
 /* Ensure the labels use standard baseline alignment */
 #tos-checkbox-group label {
     font-size: 13px;
     line-height: 1.2;
-    vertical-align: middle; /* Ensures baseline alignment */
+    vertical-align: middle; 
     display: inline-block;
     width: calc(100% - 30px); 
-    
-    /* CRITICAL FIX: Add margin to match the height of the checkbox shift */
+    /* CRITICAL FIX: Align the top margin to match the old 6px visual shift */
     margin-top: 6px; 
     margin-bottom: 6px;
 }
 
-.optin-group label {
-    font-size: 14px; 
-    font-weight: normal; 
-    color: #555;
-    line-height: 1.3;
-    vertical-align: middle; 
-    width: initial;
+/* The generic label style must be fixed to allow the margin shift */
+.optin-group {
+    margin-bottom: 25px; 
+    text-align: left;
+    padding-top: 10px;
+    display: block; 
+}
+.optin-group label { /* General label style */
+    font-size: 14px; 
+    font-weight: normal; 
+    color: #555;
+    line-height: 1.3;
+    vertical-align: middle; 
+    width: initial;
 }
 
 		/* Adjust confirm-booking-btn (Proceed to Payment) for full width in the modal */
