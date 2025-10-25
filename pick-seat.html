@@ -419,10 +419,10 @@
         tenant_id: null,
         booking_ref: null,
         source: null,
+        // NEW: Time and Date are mandatory URL parameters
         booking_date: null,
         booking_time: null,
-        // NEW: Party size parameter
-        party_size: null 
+        party_size: null // NEW: Party size parameter
     };
 
 	const PRICE_2_SEATER = 499;	
@@ -450,11 +450,9 @@
         URL_PARAMS.tenant_id = urlParams.get('tenant_id');
         URL_PARAMS.booking_ref = urlParams.get('booking_ref');
         URL_PARAMS.source = urlParams.get('source');
-        
         // Capture booking details directly from URL
         URL_PARAMS.booking_date = urlParams.get('booking_date');
         URL_PARAMS.booking_time = urlParams.get('booking_time');
-        // NEW: Capture party size
         URL_PARAMS.party_size = urlParams.get('party_size');
 
         if (!URL_PARAMS.tenant_id) {
@@ -593,7 +591,7 @@
 	async function loadBookings() {
         if (!URL_PARAMS.tenant_id || !URL_PARAMS.booking_date || !URL_PARAMS.booking_time) {
             console.error("Error: Missing mandatory booking details in URL.");
-            document.getElementById('party-prompt-modal').style.display = 'flex'; 
+            // We do NOT show the modal here, as the initial check should have already failed.
             currentBookings = [];
             updateTableVisuals();
             return false;
@@ -951,7 +949,7 @@
 
     // Helper function to determine if the selected capacity is excessively wasteful
     function isWastedCapacityAllowedForBooking(partySize, totalCapacity) {
-        if (CURRENT_PARTY_SIZE === 0) return false;
+        if (partySize === 0) return false;
         const maxAllowedCapacity = partySize + 1;	
         return totalCapacity > maxAllowedCapacity;
     }
@@ -1093,7 +1091,7 @@
         else requiredMinCapacity = 6; // Max single table capacity
 
         if (totalCapacity < requiredMinCapacity) {
-             alert(`Error: Your party size (${partySize}) requires a minimum combined capacity of ${requiredMinCapacity}. Please select a larger table or combination of tables.`);
+             alert(`Error: Your party of ${partySize} requires a minimum combined capacity of ${requiredMinCapacity}. Please select a larger table or combination of tables.`);
              return;
         }
 
@@ -1177,7 +1175,4 @@
 	</script>
 </body>
 </html>
-
-
-
 
