@@ -261,95 +261,64 @@
 			box-sizing: border-box;
 		}
 		#tos-checkbox-group {
-    margin-top: 10px;
-    margin-bottom: 25px; 
-}
-#tos-checkbox-group label {
-    font-size: 13px; /* Slightly smaller text for legal notices */
-    line-height: 1.2;
-    vertical-align: middle; /* Ensures text aligns with the checkbox */
-    padding-top: 0px; /* Reset padding if any was added */
-    display: inline-block;
-    width: calc(100% - 30px); /* Adjust width to make room for checkbox */
+    /* CRITICAL FIX: Use Flexbox to align items vertically */
+    display: flex;
+    align-items: flex-start; /* Aligns text wrapping correctly */
+    padding-top: 10px; /* Provides separation from the input field above it */
+    margin-bottom: 10px; /* Reduced space before the next element */
+    line-height: 1.25; /* Standard line height for readability */
 }
 
-#tos-checkbox-group input[type="checkbox"] {
-    vertical-align: middle; /* Align the checkbox itself */
-    position: relative;
-    top: -1px; /* Slight adjustment for perfect optical alignment */
-    margin-right: 10px; /* Space between checkbox and text */
-}
-		
-        /* --- FINAL MODAL STYLING FIXES --- */
-        
-        .non-refundable-warning {
-            font-size: 13px;
-            color: #b93d00;
-            font-weight: bold;
-            margin-top: 0;
-            margin-bottom: 20px;
-            text-align: center;
-            padding: 10px;
-            border: 1px solid #ffccaa;
-            background-color: #fff9f6;
-            border-radius: 4px;
-        }
-
-        .optin-group {
-    margin-bottom: 25px; 
-    text-align: left;
-    padding-top: 10px;
-    display: block; 
-}
-	
-#future-offers-optin {
-    width: auto !important;
-    margin-right: 10px !important; 
-    vertical-align: middle; 
-    position: relative;
-    top: 6px; /* This is the key 6px vertical offset that works */
-}
-
-/* ---------------------------------------------------- */
-/* CRITICAL FIX: Terms of Service Checkbox Alignment */
-/* ---------------------------------------------------- */
-
-/* 1. Shift the Terms of Service checkbox down 6px to match the baseline */
-#terms-of-service { 
+/* Style the checkbox input itself */
+#terms-of-service {
+    /* Reset all previous hacks and give simple margin */
     width: auto !important;
     margin-right: 10px !important;
-    vertical-align: middle;
-    position: relative;
-    top: 6px; 
+    margin-top: 2px; /* Small vertical adjustment to sit perfectly on the baseline */
+    position: static; 
 }
 
-/* 2. Style the Terms of Service Label Container */
-#tos-checkbox-group {
-    margin-bottom: 0px; /* Reset margins on the container */
-    padding-top: 10px;
-}
 #tos-checkbox-group label {
     font-size: 13px; /* Keep font size small for legal text */
-    line-height: 1.2;
-    vertical-align: middle; 
-    display: inline-block;
-    width: calc(100% - 30px);
+    flex-grow: 1; /* Allows the text to use full available space */
+    vertical-align: top;
 }
 
-/* The generic label style must be fixed to allow the margin shift */
-.optin-group {
-    margin-bottom: 25px; 
-    text-align: left;
-    padding-top: 10px;
-    display: block; 
+/* ---------------------------------------------------- */
+/* ORIGINAL CHECKBOX STYLING (Future Offers) - We must fix this to use the same alignment */
+/* ---------------------------------------------------- */
+
+#future-offers-optin {
+    /* Reset alignment for the original checkbox */
+    width: auto !important;
+    margin-right: 10px !important;	
+    vertical-align: middle;	
+    position: static; /* Remove the conflicting position hack */
+    top: auto;
 }
-.optin-group label { /* General label style */
-    font-size: 14px; 
-    font-weight: normal; 
-    color: #555;
-    line-height: 1.3;
-    vertical-align: middle; 
-    width: initial;
+
+/* General label style fix: Use Flexbox alignment for consistent spacing */
+.optin-group {
+    display: flex;
+    align-items: flex-start; /* Ensures content aligns to the top of the line */
+    margin-bottom: 25px; 
+    text-align: left;
+    padding-top: 10px; 
+}
+
+.optin-group label { /* Now applied to the Future Offers label text */
+    font-size: 14px;
+    font-weight: normal;
+    color: #555;
+    line-height: 1.3;
+    vertical-align: middle;
+    width: initial;
+    flex-grow: 1;
+}
+
+/* Ensure the input box inside optin-group aligns correctly */
+.optin-group input[type="checkbox"] {
+    margin-top: 2px; /* Small vertical adjustment for perfect optical alignment */
 }
 
 		/* Adjust confirm-booking-btn (Proceed to Payment) for full width in the modal */
