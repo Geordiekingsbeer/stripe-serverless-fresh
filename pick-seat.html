@@ -305,30 +305,35 @@
 #future-offers-optin {
     width: auto !important;
     margin-right: 10px !important; 
-    vertical-align: middle;
-    /* We removed position: relative; top: 6px; here */
+    vertical-align: middle; 
+    position: relative;
+    top: 6px; /* This is the key 6px vertical offset that works */
 }
 
 /* ---------------------------------------------------- */
-/* CRITICAL FIX: The new mandatory checkbox */
+/* CRITICAL FIX: Terms of Service Checkbox Alignment */
 /* ---------------------------------------------------- */
+
+/* 1. Shift the Terms of Service checkbox down 6px to match the baseline */
 #terms-of-service { 
     width: auto !important;
     margin-right: 10px !important;
     vertical-align: middle;
-    /* We do NOT use position: relative; top: 6px; */
+    position: relative;
+    top: 6px; 
 }
 
-/* Ensure the labels use standard baseline alignment */
+/* 2. Style the Terms of Service Label Container */
+#tos-checkbox-group {
+    margin-bottom: 0px; /* Reset margins on the container */
+    padding-top: 10px;
+}
 #tos-checkbox-group label {
-    font-size: 13px;
+    font-size: 13px; /* Keep font size small for legal text */
     line-height: 1.2;
     vertical-align: middle; 
     display: inline-block;
-    width: calc(100% - 30px); 
-    /* CRITICAL FIX: Align the top margin to match the old 6px visual shift */
-    margin-top: 6px; 
-    margin-bottom: 6px;
+    width: calc(100% - 30px);
 }
 
 /* The generic label style must be fixed to allow the margin shift */
