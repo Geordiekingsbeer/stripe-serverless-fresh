@@ -322,11 +322,15 @@
 
 /* Ensure the labels use standard baseline alignment */
 #tos-checkbox-group label {
-    font-size: 13px; /* Keep font size small for legal text */
+    font-size: 13px;
     line-height: 1.2;
-    vertical-align: middle;
+    vertical-align: middle; /* Ensures baseline alignment */
     display: inline-block;
-    width: calc(100% - 30px);
+    width: calc(100% - 30px); 
+    
+    /* CRITICAL FIX: Add margin to match the height of the checkbox shift */
+    margin-top: 6px; 
+    margin-bottom: 6px;
 }
 
 .optin-group label {
