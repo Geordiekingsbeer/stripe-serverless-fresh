@@ -1143,24 +1143,7 @@
 			console.error(err);
 			alert('Checkout creation failed. See console for details.');
 		}
-	});
-    	
-    // Party Size Prompt Handlers
-    document.getElementById('set-party-size').onclick = async () => {
-        const inputElement = document.getElementById('initial-party-size');
-        const size = parseInt(inputElement.value);
-        	
-        if (isNaN(size) || size < 1) {
-            alert("Please enter a valid party size (1 or greater).");
-            return;
-        }
-        	
-        CURRENT_PARTY_SIZE = size;
-        document.getElementById('party-prompt-modal').style.display = 'none';
-        	
-        const originalPartyInput = document.getElementById('party-size-hidden');
-        originalPartyInput.value = size; 
-        originalPartyInput.type = 'hidden';	
+	});	
 
         // Load tables and bookings now that party size is known and container is visible
         await loadTables(); 
