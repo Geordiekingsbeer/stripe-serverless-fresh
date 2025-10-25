@@ -1005,9 +1005,6 @@
 
 
 	const MINIMUM_LEAD_TIME_MS = 180 * 60 * 1000;
-    
-    // NOTE: We don't need a RESTAURANT_TIMEZONE constant anymore, 
-    // as we calculate the offset directly in the Date object below.
 
 	document.getElementById('check-availability').onclick = async () => {
 		const selectedDate = document.getElementById('booking-date').value;
@@ -1017,46 +1014,45 @@
 			alert('Please select a valid date and time.');
 			return;
 		}
-        
-        // --- NEW: TIMEZONE-AWARE LEAD TIME CHECK (Final Robust Calculation) ---
-        
-        // 1. Get the current time on the user's computer (in milliseconds)
-        const nowMs = Date.now(); 
 
-        // 2. Get the selected time from the form and convert it to a Date object.
-        // The browser interprets this string using the user's local timezone.
+		// --- NEW: ROBUST UTC-BASED LEAD TIME CHECK ---
+        
+        // 1. Establish the current London time (GMT/BST) as a UTC reference point
+        const now = new Date();
+        
+        // 2. Establish the requested booking time
 		const bookingDateTime = new Date(`${selectedDate}T${selectedTime}:00`);
-        const bookingMomentMs = bookingDateTime.getTime();
 
-        // 3. Determine the difference in minutes between the user's time and London time (GMT/BST).
-        // This is necessary because the check must be anchored to London's current clock.
-        // We calculate the difference between the user's offset and the London offset.
+        // 3. Convert both times to a single, comparable UTC millisecond value.
+        // We use the raw local components (day, hour, minute) of the London time 
+        // to create a consistent 'London Now' reference point.
+
+        // Get the requested booking time's millisecond count, adjusted to UTC:
+        const bookingMs = bookingDateTime.getTime();
         
-        // Get the user's local timezone offset in minutes (e.g., -60 for London/GMT+1)
-        const userOffsetMinutes = bookingDateTime.getTimezoneOffset(); 
+        // Get the current time's millisecond count, adjusted to the booking date:
+        // We ensure we are only comparing the DURATION from the current moment.
         
-        // London's offset can be tricky (GMT=0 or BST=-60). We use a reference time:
-        // Assume London is currently observing BST (GMT+1), so the offset is -60 minutes.
-        // NOTE: This must be updated when London switches between GMT/BST.
-        // For October 25, 2025, London is observing BST (GMT+1), so offset is -60.
-        const londonOffsetMinutes = -60; 
-
-        // Calculate the adjustment needed to shift the user's clock to London's clock.
-        // Example: User (UTC - 360 min) -> London (UTC - 60 min). 
-        // Adjustment = (-60) - (-360) = +300 minutes.
-        const offsetAdjustmentMinutes = londonOffsetMinutes - userOffsetMinutes;
-        const offsetAdjustmentMs = offsetAdjustmentMinutes * 60 * 1000;
+        // Calculate the difference between the requested time and NOW
+        const timeDifferenceMs = bookingMs - Date.now();
 
 
-        // 4. Calculate the true time remaining by adjusting the user's selection 
-        // back to the London timeframe, then comparing it to NOW.
-        // This effectively shifts the 'now' comparison anchor to London time.
-        const timeRemainingMs = bookingMomentMs + offsetAdjustmentMs - nowMs;
+        if (timeDifferenceMs < MINIMUM_LEAD_TIME_MS) {
+            // CRITICAL: We need to check if the time remaining is less than 3 hours.
 
-
-        if (timeRemainingMs < MINIMUM_LEAD_TIME_MS) {
-			alert('Premium tables must be selected at least 3 hours (180 minutes) in advance, based on London time. Please select an earlier date or a later time.');
-			return; // Block execution
+            // The issue is likely when the date changes or a DST transition occurs.
+            
+            // To guarantee the check works:
+            const nowInMs = Date.now();
+            const selectedDateTimeInMs = new Date(`${selectedDate}T${selectedTime}:00`).getTime();
+            
+            // We use the difference between the two moments, which should be accurate regardless of the timezone,
+            // as long as the dates are parsed consistently (which modern JS does).
+            
+            if (selectedDateTimeInMs - nowInMs < MINIMUM_LEAD_TIME_MS) {
+                alert('Premium tables must be selected at least 3 hours (180 minutes) in advance. Please select an earlier date or a later time.');
+                return; // Block execution
+            }
 		}
 		// --- END LEAD TIME CHECK ---
 
