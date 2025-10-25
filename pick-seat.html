@@ -330,10 +330,11 @@
 <body>
 	<h1 class="header-title" style="font-size: 24px;">Reserve Your Table</h1>
 	<div id="datetime-controls">
-		<input type="date" id="booking-date" value="" placeholder="dd/mm/yyyy" style="text-align: left;">
-		<input type="time" id="booking-time" value="" placeholder="--:--" style="text-align: left;">
-		<button id="check-availability">Check Availability</button>
-	</div>
+    <input type="date" id="booking-date" value="" placeholder="dd/mm/yyyy" style="text-align: left;">
+    <input type="time" id="booking-time" value="" placeholder="--:--" style="text-align: left;">
+    <span style="font-size: 14px; color: #555; margin-left: -5px;">(London Time)</span>
+    <button id="check-availability">Check Availability</button>
+</div>
 
 	<button id="multi-select-toggle" data-active="false">Start Multi-Select Mode</button>
 
@@ -1003,7 +1004,38 @@
 	};
 
 
+	const MINIMUM_LEAD_TIME_MS = 180 * 60 * 1000;
+    const RESTAURANT_TIMEZONE = 'Europe/London'; // London/UK Timezone
+
 	document.getElementById('check-availability').onclick = async () => {
+		const selectedDate = document.getElementById('booking-date').value;
+		const selectedTime = document.getElementById('booking-time').value;
+
+		if (!selectedDate || !selectedTime) {
+			alert('Please select a valid date and time.');
+			return;
+		}
+
+		// --- NEW: TIMEZONE-AWARE LEAD TIME CHECK (Based on London Time) ---
+        
+        // 1. Get the current time in the Restaurant's Timezone (London)
+        // This is necessary to avoid relying on the customer's clock if they are abroad.
+		const nowLondonTime = new Date().toLocaleString("en-US", {timeZone: RESTAURANT_TIMEZONE});
+		const currentMomentLondon = new Date(nowLondonTime).getTime(); // Current time in MS (London reference)
+
+        // 2. Calculate the requested booking time's position in milliseconds
+        // This time is interpreted based on the local system's offset, but we compare the difference.
+		const bookingDateTimeString = `${selectedDate}T${selectedTime}:00`;
+		const bookingMomentLocal = new Date(bookingDateTimeString).getTime(); // Booking time in MS
+
+        // 3. For an accurate comparison, we must ensure both are treated equally.
+        // If the difference is less than the lead time, block the booking.
+        if (bookingMomentLocal - currentMomentLondon < MINIMUM_LEAD_TIME_MS) {
+			alert('Premium tables must be selected at least 3 hours (180 minutes) in advance, based on London time. Please select an earlier date or a later time.');
+			return; // Block execution
+		}
+		// --- END LEAD TIME CHECK ---
+
 		stage.find('.main-table').forEach(rect => {
 			rect.stroke('#000');
 			rect.strokeWidth(1);
