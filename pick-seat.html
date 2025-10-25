@@ -598,7 +598,7 @@
         // Ensure core parameters are present
         if (!URL_PARAMS.tenant_id || !URL_PARAMS.booking_date || !URL_PARAMS.booking_time) {
             console.error("Error: Missing mandatory booking details in URL.");
-            document.getElementById('party-prompt-modal').style.display = 'flex'; // Show modal for manual input error
+            document.getElementById('party-prompt-modal').style.display = 'flex'; 
             currentBookings = [];
             updateTableVisuals();
             return false;
@@ -902,7 +902,7 @@
 		
 		const isShiftPressed = evt && (evt.shiftKey || evt.ctrlKey || evt.metaKey);
 		const isMulti = isShiftPressed || isMultiSelectMode;
-        
+        	
         // FIX: Clear existing selection if NOT in multi-select mode and a new table is clicked.
         if (index === -1 && !isMulti) {
             stage.find('.main-table').forEach(rect => {
@@ -921,20 +921,20 @@
             const tableData = tableDataMap.get(idNumber);
             const tableCapacityToAdd = getTableCapacity(tableData.w, tableData.h);
             const newCapacity = getSelectedTablesCapacity() + tableCapacityToAdd;
-            
+            	
             // --- CHECK: Real-time Multi-Select Buffer Check ---
             if (isMultiSelectMode && isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, newCapacity)) {
                 alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${getSelectedTablesCapacity()}.`);
                 return;
             }
             // --- END CHECK ---
-            
+            	
             // Enforce the rule: Individual parties cannot select more than 6 capacity total unless using multi-select mode.
             if (newCapacity > 6 && !isMultiSelectMode) {
                 alert("You cannot select tables that total more than a 6-person capacity unless you start Group Selection mode.");
                 return;
             }
-             
+            	
             selectedTableIds.push(idNumber);
             tableRect.stroke(HIGHLIGHT_COLOR);
             tableRect.strokeWidth(3);
@@ -953,15 +953,11 @@
 
 		layer.draw();
 	}
-    
+
     // Helper function to determine if the selected capacity is excessively wasteful
     function isWastedCapacityAllowedForBooking(partySize, totalCapacity) {
         if (partySize === 0) return false;
-        // FIX: Change max allowed buffer from +2 to +1.
-        // E.g., Party of 2 can reserve max (2 + 1) = 3 capacity.
-        // Two 2-seaters = 4 capacity. Since 4 > 3, it is blocked.
-        const maxAllowedCapacity = partySize + 1; 
-        
+        const maxAllowedCapacity = partySize + 1;	
         return totalCapacity > maxAllowedCapacity;
     }
 
@@ -994,127 +990,25 @@
 			layer.find('Group').forEach(group => group.draggable(true));
 		}
 
-		// Must update visuals when toggling to/from multi-select mode
 		updateTableVisuals();
 	};
 
-
-	const MINIMUM_LEAD_TIME_MS = 180 * 60 * 1000;
-
-	document.getElementById('check-availability').onclick = async () => {
-		const selectedDate = document.getElementById('booking-date').value;
-		const selectedTime = document.getElementById('booking-time').value;
-
-		if (!selectedDate || !selectedTime) {
-			alert('Please select a valid date and time.');
-			return;
-		}
-
-		// --- NEW: ROBUST UTC-BASED LEAD TIME CHECK ---
-        
-        // 1. Establish the current London time (GMT/BST) as a UTC reference point
-        const now = new Date();
-        
-        // 2. Establish the requested booking time
-		const bookingDateTime = new Date(`${selectedDate}T${selectedTime}:00`);
-
-        // 3. Convert both times to a single, comparable UTC millisecond value.
-        // We use the raw local components (day, hour, minute) of the London time 
-        // to create a consistent 'London Now' reference point.
-
-        // Get the requested booking time's millisecond count, adjusted to UTC:
-        const bookingMs = bookingDateTime.getTime();
-        
-        // Get the current time's millisecond count, adjusted to the booking date:
-        // We ensure we are only comparing the DURATION from the current moment.
-        
-        // Calculate the difference between the requested time and NOW
-        const timeDifferenceMs = bookingMs - Date.now();
-
-
-        if (timeDifferenceMs < MINIMUM_LEAD_TIME_MS) {
-            // CRITICAL: We need to check if the time remaining is less than 3 hours.
-
-            // The issue is likely when the date changes or a DST transition occurs.
-            
-            // To guarantee the check works:
-            const nowInMs = Date.now();
-            const selectedDateTimeInMs = new Date(`${selectedDate}T${selectedTime}:00`).getTime();
-            
-            // We use the difference between the two moments, which should be accurate regardless of the timezone,
-            // as long as the dates are parsed consistently (which modern JS does).
-            
-            if (selectedDateTimeInMs - nowInMs < MINIMUM_LEAD_TIME_MS) {
-                alert('Premium tables must be selected at least 3 hours (180 minutes) in advance. Please select an earlier date or a later time.');
-                return; // Block execution
-            }
-		}
-		// --- END LEAD TIME CHECK ---
-
-		stage.find('.main-table').forEach(rect => {
-			rect.stroke('#000');
-			rect.strokeWidth(1);
-		});
-		selectedTableIds = [];
-		
-		await loadBookings();
-	};
-	
-	const checkAvailabilityButton = document.getElementById('check-availability');
-	if (checkAvailabilityButton) {
-		checkAvailabilityButton.onclick = async () => {
-			await loadBookings();	
-		};
-	}
-
-
+	// REMOVED: document.getElementById('check-availability').onclick handler is now obsolete
+    
 	payBtn.onclick = async () => {
 		if (selectedTableIds.length === 0) return;
-		
-        // CONSTANTS (Local to this function)
-        const MINIMUM_LEAD_TIME_MS = 180 * 60 * 1000; // 3 hours
-        const RESTAURANT_TIMEZONE = 'Europe/London'; 
         
-		const selectedDate = document.getElementById('booking-date').value;
-		const selectedTime = document.getElementById('booking-time').value;
-
-		if (!selectedDate || !selectedTime) {
-			alert('Please select a valid date and time before proceeding.');
-			return;
-		}
-
-        // --- NEW: LEAD TIME VALIDATION CHECK ---
-        
-        // 1. Get current time in London as a millisecond reference.
-        // This method forces the interpretation to the target timezone.
-        const nowLondonString = new Date().toLocaleString("en-US", { 
-            timeZone: RESTAURANT_TIMEZONE, 
-            year: 'numeric', month: 'numeric', day: 'numeric', 
-            hour: 'numeric', minute: 'numeric', second: 'numeric'
-        });
-		const nowLondonMs = new Date(nowLondonString).getTime();
-        
-        // 2. Get the customer's selected time as a millisecond value.
-		const bookingDateTimeString = `${selectedDate}T${selectedTime}:00`;
-		const bookingMomentMs = new Date(bookingDateTimeString).getTime();
-
-        // 3. Calculate the time difference (remaining time)
-        const timeRemainingMs = bookingMomentMs - nowLondonMs;
-
-        if (timeRemainingMs < MINIMUM_LEAD_TIME_MS) {
-			alert('Validation Error: Premium tables must be selected at least 3 hours (180 minutes) in advance, based on London time.');
-			return; // BLOCK CHECKOUT
-		}
-        // --- END LEAD TIME VALIDATION ---
+        // Error check if URL parameters are missing
+        if (!URL_PARAMS.booking_date || !URL_PARAMS.booking_time) {
+             alert('Error: Booking details not found. Please ensure the link was opened correctly.');
+             return;
+        }
 
         // Set the hidden party size field for the checkout modal
         document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
-        // Optionally update placeholder text in modal for clarity
         document.getElementById('party-size-hidden').placeholder = `Party Size (${CURRENT_PARTY_SIZE})`;
 		
-		// ... (Rest of existing checks: loadBookings, isAnySelectedTableBooked, isWastedCapacityAllowedForBooking)
-
-		await loadBookings(); // Reload bookings one last time to ensure no new conflicts
+		await loadBookings(); 
 		
 		const isAnySelectedTableBooked = selectedTableIds.some(id => {
 			const group = layer.findOne('#g-' + id);
@@ -1126,16 +1020,17 @@
 			updateTableVisuals();
 			return;
 		}
-        
-        // Final Check 1: Check for EXCESSIVE capacity before opening the payment modal
-        const totalCapacity = getSelectedTablesCapacity();
-        if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
-            alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${totalCapacity}.`);
-            return;
-        }
+        
+        // Final Check 1: Check for EXCESSIVE capacity before opening the payment modal
+        const totalCapacity = getSelectedTablesCapacity();
+        if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
+            alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${totalCapacity}.`);
+            return;
+        }
 
 		customerModal.style.display = 'flex';
 	};
+
 	// -------- Close button logic for Confirm Reservation Details modal --------
 (function() {
     const customerModalEl = document.getElementById('customer-modal');
@@ -1147,8 +1042,8 @@
     });
 
     // Make the close button keyboard-friendly (Enter/Space)
-    closeBtn.setAttribute('tabindex', '0');            // allow tab focus
-    closeBtn.setAttribute('role', 'button');           // accessibility role
+    closeBtn.setAttribute('tabindex', '0');	
+    closeBtn.setAttribute('role', 'button');	
     closeBtn.setAttribute('aria-label', 'Close dialog');
 
     closeBtn.addEventListener('keydown', (ev) => {
@@ -1176,10 +1071,10 @@
 	customerForm.addEventListener('submit', async function(e) {
 		e.preventDefault();
 
-        getUrlParams(); 
+        getUrlParams();	
 
 		const customerName = document.getElementById('customer-name').value;
-		const partySize = parseInt(document.getElementById('party-size-hidden').value); 
+		const partySize = parseInt(document.getElementById('party-size-hidden').value);	
 		const email = document.getElementById('customer-email').value;
         const receiveOffers = document.getElementById('future-offers-optin').checked;
 
@@ -1189,13 +1084,13 @@
 		}
 
         const totalCapacity = getSelectedTablesCapacity();
-        
+        	
         // Final Check 1: Check for EXCESSIVE capacity here before payment processing
         if (isWastedCapacityAllowedForBooking(partySize, totalCapacity)) {
             alert(`Error: Your party of ${partySize} cannot reserve tables with a combined capacity of ${totalCapacity}. Please reduce the number of selected tables.`);
             return;
         }
-        
+        	
 
         // Final Check 2: Enforce Minimum Capacity in ALL MODES
         let requiredMinCapacity;
@@ -1217,8 +1112,9 @@
 
 		customerModal.style.display = 'none';	
 
-		const selectedDate = document.getElementById('booking-date').value;
-		const selectedTime = document.getElementById('booking-time').value;
+        // Date and Time are pulled from URL_PARAMS
+		const selectedDate = URL_PARAMS.booking_date;
+		const selectedTime = URL_PARAMS.booking_time;
 		
 		const totalPence = calculateTotalPence();	
 		
@@ -1257,33 +1153,35 @@
 			alert('Checkout creation failed. See console for details.');
 		}
 	});
-    
+    	
     // Party Size Prompt Handlers
-    document.getElementById('set-party-size').onclick = () => {
+    document.getElementById('set-party-size').onclick = async () => {
         const inputElement = document.getElementById('initial-party-size');
         const size = parseInt(inputElement.value);
-        
+        	
         if (isNaN(size) || size < 1) {
             alert("Please enter a valid party size (1 or greater).");
             return;
         }
-        
+        	
         CURRENT_PARTY_SIZE = size;
         document.getElementById('party-prompt-modal').style.display = 'none';
-        
+        	
         const originalPartyInput = document.getElementById('party-size-hidden');
-        originalPartyInput.type = 'hidden'; 
+        originalPartyInput.value = size; 
+        originalPartyInput.type = 'hidden';	
 
-        // Load bookings and update visuals after party size is set
-        loadBookings();
+        // Load tables and bookings now that party size is known and container is visible
+        await loadTables(); 
+        await loadBookings();
     };
 
     // Initialize the page by getting URL params and loading map data
     getUrlParams();
-    logInitialClick(); 
-	setDefaultDateTime();
-	window.addEventListener('resize', resizeStage);
-	loadFloorplan(loadTables);
+    logInitialClick();	
+    window.addEventListener('resize', resizeStage);
+    // CRITICAL: Call loadTables immediately to start the map rendering 
+    loadFloorplan(loadTables); 
 	</script>
 </body>
 </html>
