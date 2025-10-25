@@ -628,12 +628,11 @@
         .eq('date', selectedDateSupabase);
         
     // --- STEP 2: Fetch Active Temporary Holds (reserved_holds) ---
-    // NOTE: We only need to check holds that expire AFTER the current time
     const holdsPromise = _supa
         .from('reserved_holds')
-        .select('table_id')
-        .gte('expires_at', new Date().toISOString())
-        .filter('tenant_id', 'eq', URL_PARAMS.tenant_id);
+        .select('*') // CRITICAL: Now select all columns
+        .eq('date', selectedDateSupabase) // CRITICAL: Filter by specific date
+        .gte('expires_at', new Date().toISOString());
 
     const [slotsResult, holdsResult] = await Promise.all([slotsPromise, holdsPromise]);
 
@@ -646,9 +645,6 @@
 
     const selectedTimeMinutes = timeToMinutes(selectedTime);	
     
-    // Get list of currently held tables
-    const heldTableIds = new Set(holdsResult.data.map(h => h.table_id));
-
     // Filter permanent bookings by time overlap
     currentBookings = slotsResult.data.filter(b => {
         const bookingStartMinutes = timeToMinutes(b.start_time);
@@ -657,12 +653,26 @@
         return selectedTimeMinutes >= bookingStartMinutes && selectedTimeMinutes < bookingEndMinutes;
     });
     
-    // Add held tables to the booked list for visual gray-out
-    heldTableIds.forEach(id => {
-        // Ensure the held table isn't already marked as booked by a permanent slot
-        if (!currentBookings.some(b => Number(b.table_id) === id)) {
-            // Add temporary placeholder object for the held table
-            currentBookings.push({ table_id: id, is_held: true }); 
+    // Filter holds by time overlap and add them to currentBookings
+    holdsResult.data.forEach(h => {
+        const holdStartMinutes = timeToMinutes(h.start_time);
+        const holdEndMinutes = timeToMinutes(h.end_time);
+
+        // Check for time overlap with the current view time
+        const timeOverlaps = selectedTimeMinutes >= holdStartMinutes && selectedTimeMinutes < holdEndMinutes;
+
+        if (timeOverlaps) {
+             // Only add the hold if no permanent booking already exists for this table/slot
+            if (!currentBookings.some(b => Number(b.table_id) === h.table_id)) {
+                currentBookings.push({ 
+                    table_id: h.table_id, 
+                    is_held: true,
+                    // Use actual start/end times from the hold for accurate overlap check
+                    start_time: h.start_time,
+                    end_time: h.end_time,
+                    host_notes: `5-MINUTE CHECKOUT HOLD (Expires: ${new Date(h.expires_at).toLocaleTimeString()})`
+                }); 
+            }
         }
     });
 
