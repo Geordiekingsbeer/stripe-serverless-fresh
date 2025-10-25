@@ -267,10 +267,17 @@
 #tos-checkbox-group label {
     font-size: 13px; /* Slightly smaller text for legal notices */
     line-height: 1.2;
-    vertical-align: top;
-    padding-top: 2px;
+    vertical-align: middle; /* Ensures text aligns with the checkbox */
+    padding-top: 0px; /* Reset padding if any was added */
     display: inline-block;
     width: calc(100% - 30px); /* Adjust width to make room for checkbox */
+}
+
+#tos-checkbox-group input[type="checkbox"] {
+    vertical-align: middle; /* Align the checkbox itself */
+    position: relative;
+    top: -1px; /* Slight adjustment for perfect optical alignment */
+    margin-right: 10px; /* Space between checkbox and text */
 }
 		
         /* --- FINAL MODAL STYLING FIXES --- */
