@@ -9,6 +9,15 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 
 /**
+ * Helper function to convert time string (HH:MM) to minutes past midnight.
+ */
+function timeToMinutes(timeStr) {
+    const parts = timeStr.split(':').map(Number);
+    return (parts[0] * 60) + parts[1];
+}
+
+
+/**
  * Helper function to calculate the booking end time (2 hours later).
  */
 function calculateBookingEndTime(bookingDate, startTime) {
@@ -29,33 +38,48 @@ function calculateBookingEndTime(bookingDate, startTime) {
 
 /**
  * Helper function to create a new reservation hold for 5 minutes.
- * Now checks for time-slot conflicts against existing holds.
+ * Now checks for actual time-slot conflicts.
  */
 async function createReservationHold(tableIds, tenantId, bookingRef, bookingDate, startTime, endTime) {
     const tableIdArray = tableIds.map(id => Number(id));
-    // Hold is set for 5 minutes
     const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000).toISOString();
     
-    // 1. Check for current active holds for the specific date
-    const { data: existingHolds, error: checkError } = await supabase
+    // Convert new booking times to minutes
+    const newBookingStartMinutes = timeToMinutes(startTime);
+    const newBookingEndMinutes = timeToMinutes(endTime);
+
+    // 1. Fetch all currently active holds for the selected date and tables
+    const { data: activeHolds, error: checkError } = await supabase
         .from('reserved_holds')
-        .select('table_id')
+        .select('table_id, start_time, end_time') // Select time columns for comparison
         .in('table_id', tableIdArray)
         .eq('date', bookingDate) // CRITICAL: Check against the specific date
-        .gte('expires_at', new Date().toISOString()) // Check if expiration is in the future
-        .limit(1);
+        .gte('expires_at', new Date().toISOString()); // Only active holds
 
     if (checkError) {
         console.error("Hold Check Error:", checkError.message);
         return { isConflict: true };
     }
     
-    if (existingHolds && existingHolds.length > 0) {
-        // Conflict found: Table is held by another customer for the same date.
-        return { isConflict: true, conflictingTableId: existingHolds[0].table_id };
+    // 2. Client-side filter: Check for actual time overlap
+    const conflictingHold = activeHolds.find(hold => {
+        const holdStartMinutes = timeToMinutes(hold.start_time);
+        const holdEndMinutes = timeToMinutes(hold.end_time);
+
+        // Standard time overlap check: (StartA < EndB) AND (EndA > StartB)
+        const overlaps = (newBookingStartMinutes < holdEndMinutes) && 
+                         (newBookingEndMinutes > holdStartMinutes);
+        
+        return overlaps;
+    });
+
+
+    if (conflictingHold) {
+        // Conflict found: A table is actively held for the specific time slot.
+        return { isConflict: true, conflictingTableId: conflictingHold.table_id };
     }
 
-    // 2. No conflict, proceed to create hold records
+    // 3. No conflict, proceed to create hold records
     const holdRecords = tableIdArray.map(id => ({
         table_id: id,
         tenant_id: tenantId,
@@ -75,7 +99,7 @@ async function createReservationHold(tableIds, tenantId, bookingRef, bookingDate
         return { isConflict: true };
     }
 
-    console.log(`Successfully placed 5-minute hold on tables: ${tableIds.join(',')} for ${bookingDate}`);
+    console.log(`Successfully placed 5-minute time-specific hold on tables: ${tableIds.join(',')} for ${bookingDate}`);
     return { isConflict: false, expiresAt: fiveMinutesFromNow };
 }
 
@@ -116,7 +140,7 @@ export default async (req, res) => {
         // Calculate the 2-hour end time for the hold record
         const calculatedEndTime = calculateBookingEndTime(booking_date, booking_time);
 
-        // --- CRITICAL STEP: PLACE 5-MINUTE HOLD (Now includes time slot details) ---
+        // --- CRITICAL STEP: PLACE 5-MINUTE TIME-SPECIFIC HOLD ---
         const holdResult = await createReservationHold(
             table_ids, 
             tenant_id, 
@@ -127,7 +151,7 @@ export default async (req, res) => {
         );
 
         if (holdResult.isConflict) {
-            console.warn(`Checkout blocked by Hold: Table ${holdResult.conflictingTableId || 'N/A'} is currently held or database error occurred.`);
+            console.warn(`Checkout blocked by Hold: Table ${holdResult.conflictingTableId || 'N/A'} is currently held.`);
             // Return 409 Conflict status and redirect the customer back to the map
             return res.status(409).json({ 
                 error: `Hold Conflict: The selected table is now reserved. Please refresh the map.`,
@@ -144,7 +168,7 @@ export default async (req, res) => {
                     name: `Premium Table Reservation (${table_ids.length} Table${table_ids.length > 1 ? 's' : ''})`,
                     description: `Tables: ${table_ids.join(', ')} | Date: ${booking_date} | Time: ${booking_time}.`,
                 },
-                unit_amount: total_pence, // Total pence calculated from frontend
+                unit_amount: total_pence, 
             },
             quantity: 1,
         };
