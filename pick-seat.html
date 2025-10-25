@@ -606,6 +606,15 @@
             return false;
         }
 
+        // CRITICAL FIX: Check if data is corrupted by placeholders
+        if (URL_PARAMS.booking_date.includes('{') || URL_PARAMS.booking_time.includes('{')) {
+            alert('Error: Please use a final link with the reservation date and time already filled in. The link variables were not replaced correctly.');
+            console.error("Error: URL variables were passed as raw text, not replaced with live data.");
+            currentBookings = [];
+            updateTableVisuals();
+            return false;
+        }
+
 		const selectedDateSupabase = URL_PARAMS.booking_date;
 		const selectedTime = URL_PARAMS.booking_time;
 
