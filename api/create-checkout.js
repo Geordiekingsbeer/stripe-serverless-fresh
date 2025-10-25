@@ -16,7 +16,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
  */
 async function createReservationHold(tableIds, tenantId, bookingRef) {
     const tableIdArray = tableIds.map(id => Number(id));
-    const tenMinutesFromNow = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const tenMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000).toISOString();
     
     // 1. Check for CURRENT active holds for any of the selected tables
     const { data: existingHolds, error: checkError } = await supabase
