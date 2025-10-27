@@ -1,612 +1,1030 @@
-<script src="https://js.stripe.com/v3/ "></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2 "></script>
-<script src="https://unpkg.com/konva@9/konva.min.js "></script>
-<script>
-const STAGE_WIDTH = 480;	
-const STAGE_HEIGHT = 480;	
-
-// --- DEMO FIX: STUBBED SUPABASE CLIENT (Prevents real DB calls) ---
-const _supa = {
-    from: (tableName) => ({
-        select: () => ({
-            eq: () => ({
-                gte: () => Promise.resolve({ data: [], error: null }),
-                maybeSingle: () => Promise.resolve({ data: null, error: null }),
-                then: () => Promise.resolve({ data: [], error: null })
-            }),
-            order: () => ({
-                then: () => Promise.resolve({ data: [], error: null })
-            }),
-        }),
-        upsert: () => Promise.resolve({ error: null })
-    })
-};
-// ----------------------------------------------------
-
-const container = document.getElementById('container');
-
-const stage = new Konva.Stage({ container: 'container', width: STAGE_WIDTH, height: STAGE_HEIGHT });
-const backgroundLayer = new Konva.Layer();
-stage.add(backgroundLayer);
-const layer = new Konva.Layer();
-stage.add(layer);
-
-const payBtn = document.getElementById('payBtn');
-const customerModal = document.getElementById('customer-modal');
-const customerForm = document.getElementById('customer-form');
-const multiSelectToggle = document.getElementById('multi-select-toggle');	
-
-let selectedTableIds = [];	
-let currentBookings = [];	
-let tableDataMap = new Map();	
-let isMultiSelectMode = false;	
-let selectedGroup = null;	
-let selectedMultiTables = new Set();	
-const MULTI_BOOK_BUTTON = { style: { display: 'none' } };
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>Demo: Reserve Your Table</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	
-let CURRENT_PARTY_SIZE = 0;
-const FILTERED_COLOR = '#cccccc';
+	<style>
+		body{
+			font-family: Arial, Helvetica, sans-serif;
+			text-align: center;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: flex-start;
+			padding: 20px 10px;
+			background: #e3e3e3;
+			min-height: 100vh;
+		}
+		
+		h1 {
+			font-size: 32px;
+			font-weight: 700;
+			color: #333;
+			margin-bottom: 5px;
+		}
 
-function generateUniqueId() {
-    return 'AUTO-' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+		.subtitle {
+			font-size: 18px;
+			color: #666;
+			margin-bottom: 30px;
+		}
+
+		.instructions {
+			display: none;
+		}
+
+		#datetime-controls {
+			display: flex;
+			gap: 10px;
+			margin-bottom: 15px;
+			align-items: center;
+			padding: 0;
+			background: none;
+			box-shadow: none;
+			flex-wrap: nowrap;
+			max-width: 480px;
+			width: 100%;
+		}
+
+		#datetime-controls label {
+			display: none;
+		}
+		
+		#datetime-controls input {
+			flex-grow: 1;
+			padding: 12px 10px;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			background-color: white;	
+			font-size: 16px;
+			color: #333;
+			max-width: none;
+			font-weight: 500;
+			text-align: center;
+			
+			padding-left: 10px;	
+			-webkit-appearance: none;
+			-moz-appearance: none;
+			appearance: none;
+			font-family: Arial, sans-serif;
+		}
+		
+		#booking-date {
+			 text-align: left;
+			 padding-right: 5px;
+		}
+
+		#booking-time {
+			 text-align: left;
+			 padding-right: 5px;
+		}
+
+
+		#check-availability {
+			padding: 12px 10px;
+			background-color: #b7d7a8;
+			color: #333;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			font-weight: 600;
+			flex-grow: 1;
+			box-shadow: none;
+			white-space: nowrap;
+		}
+		
+		#check-availability:hover {
+			background-color: #a7c598;
+		}
+		
+		#multi-select-toggle {
+			padding: 10px 15px;
+			font-size: 16px;
+			font-weight: 500;
+			margin-bottom: 20px;
+			border-radius: 4px;
+			cursor: pointer;
+			border: 1px solid #ccc;
+			background-color: #f7f7f7;	
+			color: #333;
+			transition: all 0.2s ease;
+			white-space: nowrap;
+			width: 90vw;
+			max-width: 480px;
+			text-align: center;
+			box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+		}
+		
+		#multi-select-toggle.active {
+			background-color: #1976d2;
+			color: white;
+			border: 1px solid #1977d2;
+		}
+
+		#container-wrapper {
+			display: flex;
+			justify-content: center;
+			width: 100%;
+			max-width: 480px;	
+		}
+
+		#container{
+			width: 100%;
+			height: auto;
+			border: none;	
+			box-shadow: none;
+			background-color: transparent;
+		}
+
+		.status-legend {
+			margin-top: 10px;
+			font-size: 14px;
+			color: #555;
+			display: flex;
+			gap: 15px;
+			flex-wrap: wrap;
+			justify-content: center;
+			max-width: 480px;
+			width: 100%;
+		}
+		.legend-item {
+			display: flex;
+			align-items: center;
+		}
+		.legend-color {
+			width: 15px;
+			height: 15px;
+			border-radius: 3px;
+			margin-right: 5px;
+			border: 1px solid #000;
+		}
+
+		/* --- Shared Green Button Style (Base) --- */
+		.green-action-btn{
+			margin-top:20px;
+			padding:12px 15px;
+			font-size:16px;
+			background:#388e3c; /* Base Dark Green */
+			color:#fff;
+			border:none;
+			border-radius: 20px;
+			cursor:pointer;
+			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+			/* These width properties apply to the main page button */
+			width: 90vw;
+			max-width: 480px;
+			text-align: center;
+			transition: background-color 0.2s ease;
+			font-weight: 600;
+			box-sizing: border-box;
+		}
+		
+		.green-action-btn:hover:not(:disabled) {
+			background: #2e7d32; /* Slightly darker green on hover */
+		}
+		
+		.green-action-btn:disabled{
+			background:#bbb;
+			cursor: not-allowed;
+			box-shadow: none;
+		}
+		/* --- END: Shared Green Button Style --- */
+
+		/* Apply the new shared style to payBtn */
+		#payBtn {
+			width: 90vw;	
+			max-width: 480px;
+			margin-top: 20px;
+		}
+
+		.modal {
+			display: none;	
+			position: fixed;	
+			z-index: 1001;	
+			left: 0;
+			top: 0;
+			width: 100%;	
+			height: 100%;	
+			overflow: auto;	
+			background-color: rgba(0,0,0,0.4);	
+			justify-content: center;
+			align-items: center;
+		}
+
+		.modal-content {
+	position: relative;	 	 
+	background-color: #fefefe;
+	padding: 30px;
+	border: 1px solid #888;
+	width: 90%;
+	max-width: 400px;
+	border-radius: 10px;
+	box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+	margin: 10vh auto;
 }
 
-let URL_PARAMS = {
-    tenant_id: 'DEMO-TENANT', 
-    booking_ref: null,
-    source: 'demo',
-    booking_date: '2025-10-26', 
-    booking_time: '18:00' 
-};
-
-const PRICE_2_SEATER = 499;	
-const PRICE_4_SEATER = 999;	
-const PRICE_6_SEATER = 1499;
-
-const TABLE_COLOR = '#b7d7a8';		
-const BOOKED_COLOR = '#e0e0e0';		
-const UNAVAILABLE_COLOR = '#ffffff';
-const SEAT_COLOR = '#555';	
-const HIGHLIGHT_COLOR = '#ffeb3b';
-
-const STAFF_USE_TABLE_IDS = [10, 13, 12, 14, 1];
-
-function getTableCapacity(w, h) {
-    if (w === 30 && h === 30) return 2;
-    if ((w === 30 && h === 50) || (w === 50 && h === 30)) return 4;
-    if (w === 90 && h === 30) return 6;
-    return 0;
+/* Close (X) button in top-right of modal */
+.close-modal {
+	position: absolute;	 	 
+	top: 10px; 	 	 	 	 	 
+	right: 15px; 	 	 	 	 	 
+	font-size: 24px;
+	font-weight: 700;
+	color: #888;
+	cursor: pointer;
+	line-height: 1;
+	user-select: none;
+	border: none;
+	background: transparent;
+	padding: 4px;
+	border-radius: 4px;
+	transition: color 0.12s ease, background-color 0.12s ease;
 }
 
-function getUrlParams() {
-    const urlParams = new URLSearchParams(window.location.search);
+/* Hover/Focus states to make it obvious and accessible */
+.close-modal:hover,
+.close-modal:focus {
+	color: #000;
+	outline: none;
+	background-color: rgba(0,0,0,0.04);
+}
+		
+		/* Modal Content Inputs */
+		.modal-content input {
+			width: 100%;
+			padding: 10px;
+			margin-bottom: 15px;
+			border: 1px solid #ccc;
+			border-radius: 5px;
+			box-sizing: border-box;
+		}
+		#tos-checkbox-group {
+	display: flex;
+	align-items: flex-start; 
+	padding-top: 10px; 
+	margin-bottom: 10px; 
+	line-height: 1.25; 
+}
+
+/* Style the checkbox input itself */
+#terms-of-service {
+	width: auto !important;
+	margin-right: 10px !important;
+	margin-top: 2px; 
+	position: static;	
+}
+
+#tos-checkbox-group label {
+	font-size: 13px; 
+	flex-grow: 1; 
+	vertical-align: top;
+}
+
+/* ---------------------------------------------------- */
+
+#future-offers-optin {
+	width: auto !important;
+	margin-right: 10px !important;	
+	vertical-align: middle;	
+	position: static; 
+	top: auto;
+}
+
+/* General label style fix: Use Flexbox alignment for consistent spacing */
+.optin-group {
+	display: flex;
+	align-items: flex-start; 
+	margin-bottom: 25px;	
+	text-align: left;
+	padding-top: 10px;	
+}
+
+.optin-group label { 
+	font-size: 14px;
+	font-weight: normal;
+	color: #555;
+	line-height: 1.3;
+	vertical-align: middle;
+	width: initial;
+	flex-grow: 1;
+}
+
+/* Ensure the input box inside optin-group aligns correctly */
+.optin-group input[type="checkbox"] {
+	margin-top: 2px; 
+}
+
+		/* Adjust confirm-booking-btn (Proceed to Payment) for full width in the modal */
+		#confirm-booking-btn {
+			padding: 12px 15px;
+			border-radius: 20px;
+			width: 100%;	
+			max-width: 100%;
+			margin-top: 20px;
+			display: block;
+		}
+			
+		/* New Modal for Party Size Prompt */
+		#party-prompt-modal .modal-content {
+	margin: 30vh auto;
+	text-align: left;
+	}
+			
+		/* The #set-party-size button also needs its own width/centering to correctly inherit green-action-btn's size behavior within the modal */
+#set-party-size {
+	width: auto; 
+	display: block; 
+	margin: 15px auto 0 auto; 
+	min-width: 180px; 
+	max-width: 100%; 
+}
+	</style>
+</head>
+<body>
+	<h1 class="header-title" style="font-size: 24px;">Reserve Your Premium Table (DEMO)</h1>
+	<p class="subtitle" style="color: #1976d2; font-weight: 600;">Default Party Size: 4 Guests</p>
+
+	<div id="datetime-controls" style="display: none;">
+	</div>
+
+	<button id="multi-select-toggle" data-active="false">Start Multi-Select Mode</button>
+
+	<div id="container-wrapper">	
+		<div id="container"></div>
+	</div>
+
+	<div class="status-legend">
+		<div class="legend-item"><span class="legend-color" style="background-color: #b7d7a8;"></span>Premium Available</div>
+		<div class="legend-item"><span class="legend-color" style="background-color: #e0e0e0;"></span>Booked (Premium)</div>
+		<div class="legend-item"><span class="legend-color" style="background-color: #ffffff;"></span>Staff Use Only (N/A)</div>
+		<div class="legend-item"><span class="legend-color" style="background-color: #cccccc;"></span>Filtered (Too Small/Large for 4)</div>	
+	</div>
+	
+	<button id="payBtn" class="green-action-btn" disabled>Pay for 0 Tables – Stripe (DEMO DISABLED)</button>
+
+	<div id="customer-modal" class="modal">
+	<div class="modal-content">
+	<span class="close-modal" id="close-customer-modal">&times;</span>
+	<h3>Confirm Reservation Details (DEMO)</h3>
+			<form id="customer-form">
+				<input type="text" id="customer-name" placeholder="Full Name" required>
+				<input type="number" id="party-size-hidden" placeholder="Party Size (e.g., 4)" min="1" required>
+				<input type="email" id="customer-email" placeholder="Email for Receipt" required>
+				<div class="optin-group" id="tos-checkbox-group">
+	<input type="checkbox" id="terms-of-service" required>
+	<label for="terms-of-service" style="font-weight: 500;">
+	I agree to the Terms of Service and acknowledge the Strict Liability Limit on refunds which can be read	
+	<a href="https://dine-select.com" target="_blank" style="color: #1976d2; text-decoration: underline;">here</a>.
+	</label>
+</div>
+
+	<div class="optin-group">
+	<input type="checkbox" id="future-offers-optin">
+	<label for="future-offers-optin">
+	Yes, I would like to receive future offers and discounts from restaurants in my area.
+	</label>
+	</div>
+
+	<div class="non-refundable-warning">
+	PLEASE NOTE: This is a **DEMO** purchase. No payment will be processed.
+	</div>
+	<button type="submit" id="confirm-booking-btn" class="green-action-btn">Proceed to Payment (DEMO)</button>
+			</form>
+		</div>
+	</div>
+	
+	<div id="party-prompt-modal" class="modal"> 
+		<div class="modal-content">
+			<h3>How many people are in your party?</h3>
+	<p style="margin-bottom: 20px;">Please enter your party size to view suitable tables.</p>
+			<input type="number" id="initial-party-size" placeholder="1 to 6+" min="1" required>
+			<button id="set-party-size" class="green-action-btn">Continue to Seating Map</button>
+		</div>
+	</div>
+
+	<script src="https://js.stripe.com/v3/ "></script>
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2 "></script>
+	<script src="https://unpkg.com/konva@9/konva.min.js "></script>
+	<script>
+document.addEventListener('DOMContentLoaded', (event) => {
     
-    if (urlParams.get('tenant_id')) URL_PARAMS.tenant_id = urlParams.get('tenant_id');
-    if (urlParams.get('booking_ref')) URL_PARAMS.booking_ref = urlParams.get('booking_ref');
-    if (urlParams.get('source')) URL_PARAMS.source = urlParams.get('source');
-    if (urlParams.get('booking_date')) URL_PARAMS.booking_date = urlParams.get('booking_date');
-    if (urlParams.get('booking_time')) URL_PARAMS.booking_time = urlParams.get('booking_time');
-    
-    if (!URL_PARAMS.booking_ref) {
-        URL_PARAMS.booking_ref = generateUniqueId();
-    }
-}
+    const STAGE_WIDTH = 480;	
+    const STAGE_HEIGHT = 480;	
 
-function getSelectedTablesCapacity() {
-    let maxCapacity = 0;
-    selectedTableIds.forEach(id => {
-        const data = tableDataMap.get(id);
-        if (data) {
-            maxCapacity += getTableCapacity(data.w, data.h);
-        }
-    });
-    return maxCapacity;
-}
-
-function isWastedCapacity(tableCapacity) {
-    if (CURRENT_PARTY_SIZE === 0) return false;
-    if (CURRENT_PARTY_SIZE <= 2 && tableCapacity > 2) return true;	
-    if (CURRENT_PARTY_SIZE <= 4 && tableCapacity === 6) return true;
-    return false;
-}
-
-function isTooSmall(tableCapacity) {
-    if (CURRENT_PARTY_SIZE === 0) return false;
-    if (CURRENT_PARTY_SIZE > 2 && tableCapacity === 2) return true;
-    if (CURRENT_PARTY_SIZE > 4 && tableCapacity === 4) return true;
-    return false;
-}
-
-async function logInitialClick() {
-    console.log('DEMO MODE: Tracking disabled.');
-}
-
-function timeToMinutes(timeStr) {
-    const parts = timeStr.split(':').map(Number);
-    const hours = parts[0] || 0;
-    const minutes = parts[1] || 0;
-    return (hours * 60) + minutes;
-}
-
-function getTablePrice(w, h) {
-    if (w === 30 && h === 30) return PRICE_2_SEATER;
-    if ((w === 30 && h === 50) || (w === 50 && h === 30)) return PRICE_4_SEATER;
-    if (w === 90 && h === 30) return PRICE_6_SEATER;
-    return 0;
-}
-
-function calculateTotalPence() {
-    let totalPence = 0;
-    selectedTableIds.forEach(id => {
-        const data = tableDataMap.get(id);
-        if (data) {
-            totalPence += data.price;
-        }
-    });
-    return totalPence;
-}
-
-function updatePayButton(totalPence) {
-    const totalDollars = (totalPence / 100).toFixed(2);
-    if (totalPence > 0) {
-        payBtn.disabled = false;
-        payBtn.textContent = `Pay £${totalDollars} – Stripe (DEMO)`;
-    } else {
-        payBtn.disabled = true;
-        payBtn.textContent = `Pay for 0 Tables – Stripe (DEMO)`;
-    }
-}
-
-function resizeStage() {
-    const containerWidth = container.offsetWidth;
-    const scale = containerWidth / STAGE_WIDTH;
-
-    stage.width(containerWidth);
-    stage.height(STAGE_HEIGHT * scale);
-    stage.scale({ x: scale, y: scale });
-
-    container.style.height = `${STAGE_HEIGHT * scale}px`;
-
-    stage.draw();
-}
-
-function loadFloorplan(callback) {
-    const imageObj = new Image();
-    imageObj.onload = function() {
-        const floorplan = new Konva.Image({
-            x: 0, y: 0, image: imageObj, width: STAGE_WIDTH, height: STAGE_HEIGHT,
-        });
-        backgroundLayer.add(floorplan);
-        
-        backgroundLayer.draw();
-        
-        resizeStage();	
-        
-        if (callback) callback();
+    // --- DEMO FIX: STUBBED SUPABASE CLIENT (Prevents real DB calls) ---
+    const _supa = {
+        from: (tableName) => ({
+            select: () => ({
+                eq: () => ({
+                    gte: () => Promise.resolve({ data: [], error: null }),
+                    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+                    then: () => Promise.resolve({ data: [], error: null })
+                }),
+                order: () => ({
+                    then: () => Promise.resolve({ data: [], error: null })
+                }),
+            }),
+            upsert: () => Promise.resolve({ error: null })
+        })
     };
-    imageObj.src = 'floorplan.png?v=' + new Date().getTime();	
-}
+    // ----------------------------------------------------
 
-async function loadBookings() {
-    // DEMO FIX: Skip real loading, use dummy data (e.g., table 20 is booked)
-    currentBookings = [{ table_id: 20, is_held: false, start_time: '18:00', end_time: '20:00' }];
-    updateTableVisuals();
-    return true;
-}
+    const container = document.getElementById('container');
 
-
-function updateTableVisuals() {
-    const currentSelection = [...selectedTableIds];	
-    selectedTableIds = [];	
+    // CRITICAL: Check if container was found before proceeding
+    if (!container) {
+        console.error("Critical Error: 'container' element not found in the DOM.");
+        return; 
+    }
     
-    stage.find('.main-table').forEach(tableRect => {
-        const group = tableRect.getParent();
-        const tableId = Number(group.id().substring(2));	
+    const stage = new Konva.Stage({ container: 'container', width: STAGE_WIDTH, height: STAGE_HEIGHT });
+    const backgroundLayer = new Konva.Layer();
+    stage.add(backgroundLayer);
+    const layer = new Konva.Layer();
+    stage.add(layer);
+
+    const payBtn = document.getElementById('payBtn');
+    const customerModal = document.getElementById('customer-modal');
+    const customerForm = document.getElementById('customer-form');
+    const multiSelectToggle = document.getElementById('multi-select-toggle');	
+
+    let selectedTableIds = [];	
+    let currentBookings = [];	
+    let tableDataMap = new Map();	
+    let isMultiSelectMode = false;	
+    let selectedGroup = null;	
+    let selectedMultiTables = new Set();	
+    const MULTI_BOOK_BUTTON = { style: { display: 'none' } };
         
-        const data = tableDataMap.get(tableId);
-        const tableCapacity = data ? getTableCapacity(data.w, data.h) : 0;
+    let CURRENT_PARTY_SIZE = 0;
+    const FILTERED_COLOR = '#cccccc';
+
+    function generateUniqueId() {
+        return 'AUTO-' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+    }
+
+    let URL_PARAMS = {
+        tenant_id: 'DEMO-TENANT', 
+        booking_ref: null,
+        source: 'demo',
+        booking_date: '2025-10-26', 
+        booking_time: '18:00' 
+    };
+
+    const PRICE_2_SEATER = 499;	
+    const PRICE_4_SEATER = 999;	
+    const PRICE_6_SEATER = 1499;
+
+    const TABLE_COLOR = '#b7d7a8';		
+    const BOOKED_COLOR = '#e0e0e0';		
+    const UNAVAILABLE_COLOR = '#ffffff';
+    const SEAT_COLOR = '#555';	
+    const HIGHLIGHT_COLOR = '#ffeb3b';
+
+    const STAFF_USE_TABLE_IDS = [10, 13, 12, 14, 1];
+
+    function getTableCapacity(w, h) {
+        if (w === 30 && h === 30) return 2;
+        if ((w === 30 && h === 50) || (w === 50 && h === 30)) return 4;
+        if (w === 90 && h === 30) return 6;
+        return 0;
+    }
+
+    function getUrlParams() {
+        const urlParams = new URLSearchParams(window.location.search);
         
-        // 1. Check for Staff Use Only - This always overrides everything
-        if (STAFF_USE_TABLE_IDS.includes(tableId)) {
-            tableRect.fill(UNAVAILABLE_COLOR);
+        if (urlParams.get('tenant_id')) URL_PARAMS.tenant_id = urlParams.get('tenant_id');
+        if (urlParams.get('booking_ref')) URL_PARAMS.booking_ref = urlParams.get('booking_ref');
+        if (urlParams.get('source')) URL_PARAMS.source = urlParams.get('source');
+        if (urlParams.get('booking_date')) URL_PARAMS.booking_date = urlParams.get('booking_date');
+        if (urlParams.get('booking_time')) URL_PARAMS.booking_time = urlParams.get('booking_time');
+        
+        if (!URL_PARAMS.booking_ref) {
+            URL_PARAMS.booking_ref = generateUniqueId();
+        }
+    }
+
+    function getSelectedTablesCapacity() {
+        let maxCapacity = 0;
+        selectedTableIds.forEach(id => {
+            const data = tableDataMap.get(id);
+            if (data) {
+                maxCapacity += getTableCapacity(data.w, data.h);
+            }
+        });
+        return maxCapacity;
+    }
+
+    function isWastedCapacity(tableCapacity) {
+        if (CURRENT_PARTY_SIZE === 0) return false;
+        if (CURRENT_PARTY_SIZE <= 2 && tableCapacity > 2) return true;	
+        if (CURRENT_PARTY_SIZE <= 4 && tableCapacity === 6) return true;
+        return false;
+    }
+
+    function isTooSmall(tableCapacity) {
+        if (CURRENT_PARTY_SIZE === 0) return false;
+        if (CURRENT_PARTY_SIZE > 2 && tableCapacity === 2) return true;
+        if (CURRENT_PARTY_SIZE > 4 && tableCapacity === 4) return true;
+        return false;
+    }
+
+    async function logInitialClick() {
+        console.log('DEMO MODE: Tracking disabled.');
+    }
+
+    function timeToMinutes(timeStr) {
+        const parts = timeStr.split(':').map(Number);
+        const hours = parts[0] || 0;
+        const minutes = parts[1] || 0;
+        return (hours * 60) + minutes;
+    }
+
+    function getTablePrice(w, h) {
+        if (w === 30 && h === 30) return PRICE_2_SEATER;
+        if ((w === 30 && h === 50) || (w === 50 && h === 30)) return PRICE_4_SEATER;
+        if (w === 90 && h === 30) return PRICE_6_SEATER;
+        return 0;
+    }
+
+    function calculateTotalPence() {
+        let totalPence = 0;
+        selectedTableIds.forEach(id => {
+            const data = tableDataMap.get(id);
+            if (data) {
+                totalPence += data.price;
+            }
+        });
+        return totalPence;
+    }
+
+    function updatePayButton(totalPence) {
+        const totalDollars = (totalPence / 100).toFixed(2);
+        if (totalPence > 0) {
+            payBtn.disabled = false;
+            payBtn.textContent = `Pay £${totalDollars} – Stripe (DEMO)`;
         } else {
-            // 2. Determine Filter/Booked Status
-            const wastedCapacity = isWastedCapacity(tableCapacity);
-            const tooSmall = isTooSmall(tableCapacity);
-            const isBooked = currentBookings.some(b => Number(b.table_id) === tableId);
-            	
-            let isFiltered = false;
+            payBtn.disabled = true;
+            payBtn.textContent = `Pay for 0 Tables – Stripe (DEMO)`;
+        }
+    }
 
-            // Rule A: ALWAYS filter out tables that are too large (wasted capacity)
-            if (wastedCapacity) {
-                isFiltered = true;
-            }	
-            // Rule B: ONLY filter out tables that are too small if we are NOT in Multi-Select Mode
-            else if (!isMultiSelectMode && tooSmall) {
-                isFiltered = true;
-            }
+    function resizeStage() {
+        const containerWidth = container.offsetWidth;
+        const scale = containerWidth / STAGE_WIDTH;
 
-            if (isFiltered) {
-                tableRect.fill(FILTERED_COLOR);
-            }	
-            // Priority 2: Booked Status
-            else if (isBooked) {
-                tableRect.fill(BOOKED_COLOR);
-            }	
-            // Priority 3: Available
-            else {
-                tableRect.fill(TABLE_COLOR);
+        stage.width(containerWidth);
+        stage.height(STAGE_HEIGHT * scale);
+        stage.scale({ x: scale, y: scale });
+
+        container.style.height = `${STAGE_HEIGHT * scale}px`;
+
+        stage.draw();
+    }
+
+    function loadFloorplan(callback) {
+        const imageObj = new Image();
+        imageObj.onload = function() {
+            const floorplan = new Konva.Image({
+                x: 0, y: 0, image: imageObj, width: STAGE_WIDTH, height: STAGE_HEIGHT,
+            });
+            backgroundLayer.add(floorplan);
+            
+            backgroundLayer.draw();
+            
+            resizeStage();	
+            
+            if (callback) callback();
+        };
+        imageObj.src = 'floorplan.png?v=' + new Date().getTime();	
+    }
+
+    async function loadBookings() {
+        // DEMO FIX: Skip real loading, use dummy data (e.g., table 20 is booked)
+        currentBookings = [{ table_id: 20, is_held: false, start_time: '18:00', end_time: '20:00' }];
+        updateTableVisuals();
+        return true;
+    }
+
+
+    function updateTableVisuals() {
+        const currentSelection = [...selectedTableIds];	
+        selectedTableIds = [];	
+        
+        stage.find('.main-table').forEach(tableRect => {
+            const group = tableRect.getParent();
+            const tableId = Number(group.id().substring(2));	
+            
+            const data = tableDataMap.get(tableId);
+            const tableCapacity = data ? getTableCapacity(data.w, data.h) : 0;
+            
+            // 1. Check for Staff Use Only - This always overrides everything
+            if (STAFF_USE_TABLE_IDS.includes(tableId)) {
+                tableRect.fill(UNAVAILABLE_COLOR);
+            } else {
+                // 2. Determine Filter/Booked Status
+                const wastedCapacity = isWastedCapacity(tableCapacity);
+                const tooSmall = isTooSmall(tableCapacity);
+                const isBooked = currentBookings.some(b => Number(b.table_id) === tableId);
+                	
+                let isFiltered = false;
+
+                // Rule A: ALWAYS filter out tables that are too large (wasted capacity)
+                if (wastedCapacity) {
+                    isFiltered = true;
+                }	
+                // Rule B: ONLY filter out tables that are too small if we are NOT in Multi-Select Mode
+                else if (!isMultiSelectMode && tooSmall) {
+                    isFiltered = true;
+                }
+
+                if (isFiltered) {
+                    tableRect.fill(FILTERED_COLOR);
+                }	
+                // Priority 2: Booked Status
+                else if (isBooked) {
+                    tableRect.fill(BOOKED_COLOR);
+                }	
+                // Priority 3: Available
+                else {
+                    tableRect.fill(TABLE_COLOR);
+                }
             }
+            
+            // Reset stroke
+            tableRect.stroke('#000');	
+            tableRect.strokeWidth(1);
+        });
+        
+        // Re-apply selection highlights for available tables
+        currentSelection.forEach(id => {
+            const group = layer.findOne('#g-' + id);
+            if (!group) return;	
+            const tableRect = group.findOne('.main-table');
+
+            if (tableRect.fill() === TABLE_COLOR) {
+                selectedTableIds.push(id);
+                tableRect.stroke(HIGHLIGHT_COLOR);
+                tableRect.strokeWidth(3);
+            }
+        });
+
+        const totalPence = calculateTotalPence();
+        updatePayButton(totalPence);
+
+        layer.draw();
+    }
+
+    async function loadTables() {
+        if (!URL_PARAMS.tenant_id) return false;	
+
+        // --- CRITICAL FIX: Hardcoded table positions for demo consistency ---
+        const tables = [
+            { id: 1, x: 235, y: 110, w: 90, h: 30, rotation: 0 },
+            { id: 2, x: 100, y: 30, w: 90, h: 30, rotation: 0 },
+            { id: 3, x: 100, y: 150, w: 30, h: 30, rotation: 0 },
+            { id: 4, x: 140, y: 220, w: 30, h: 30, rotation: 0 },
+            { id: 5, x: 180, y: 300, w: 50, h: 30, rotation: 90 },
+            { id: 6, x: 250, y: 330, w: 30, h: 30, rotation: 0 },
+            { id: 7, x: 30, y: 300, w: 50, h: 30, rotation: 90 },
+            { id: 8, x: 400, y: 100, w: 30, h: 30, rotation: 0 },
+            { id: 9, x: 20, y: 180, w: 30, h: 50, rotation: 0 },
+            { id: 10, x: 300, y: 240, w: 30, h: 30, rotation: 0 },
+            { id: 11, x: 40, y: 80, w: 30, h: 30, rotation: 0 },
+            { id: 12, x: 350, y: 350, w: 50, h: 30, rotation: 0 },
+            { id: 13, x: 400, y: 280, w: 30, h: 30, rotation: 0 },
+            { id: 14, x: 250, y: 180, w: 30, h: 30, rotation: 0 },
+            
+            { id: 18, x: 140, y: 280, w: 30, h: 30, rotation: 0 },
+            { id: 19, x: 220, y: 280, w: 30, h: 30, rotation: 0 },
+            { id: 20, x: 300, y: 280, w: 30, h: 30, rotation: 0 },
+            { id: 21, x: 300, y: 180, w: 50, h: 30, rotation: 90 },
+        ].sort((a, b) => a.id - b.id);
+        // ------------------------------------------------------------------
+        
+        layer.destroyChildren();	
+        tableDataMap = new Map();
+        
+        tables.forEach(t => {
+            const price = getTablePrice(t.w, t.h);
+            tableDataMap.set(t.id, { id: t.id, price: price, w: t.w, h: t.h });
+
+            const group = drawTable(t);
+            const tableRect = group.findOne('.main-table');
+            
+            group.offset({ x: tableRect.width()/2, y: tableRect.height()/2 });
+            group.x(t.x + tableRect.width()/2);
+            group.y(t.y + tableRect.height()/2);
+            group.rotation(t.rotation || 0);	
+        });
+        
+        layer.draw();	
+        loadBookings(); 
+    }
+
+    function drawTable(t) {
+        const group = new Konva.Group({	
+            x: t.x,	
+            y: t.y,	
+            id: 'g-' + t.id,
+            name: 'selectable-table'	
+        });
+        layer.add(group);
+
+        const tableCapacity = getTableCapacity(t.w, t.h);
+        let initialFill = STAFF_USE_TABLE_IDS.includes(t.id) ? UNAVAILABLE_COLOR : TABLE_COLOR;
+
+        const tableRect = new Konva.Rect({	
+            width: t.w,	
+            height: t.h,	
+            fill: initialFill,	
+            stroke: '#000',	
+            strokeWidth: 1,
+            name: 'main-table',
+            table_capacity: tableCapacity
+        });
+        group.add(tableRect);
+
+        group.on('click tap', (e) => selectTable(t.id, e.evt));
+
+        const baseSeatSize = 12;	
+        const seatHalf = baseSeatSize / 2;	
+
+        function makeSeat(x, y, w, h) {
+            group.add(new Konva.Rect({ width:w, height:h, fill:SEAT_COLOR, x:x, y:y }));
         }
         
-        // Reset stroke
-        tableRect.stroke('#000');	
-        tableRect.strokeWidth(1);
-    });
-    
-    // Re-apply selection highlights for available tables
-    currentSelection.forEach(id => {
-        const group = layer.findOne('#g-' + id);
-        if (!group) return;	
-        const tableRect = group.findOne('.main-table');
+        if (t.w === 30 && t.h === 30) {
+            const seatW = baseSeatSize;	
+            const seatH = seatHalf;	 	
+            makeSeat(t.w/2 - seatW/2, -seatH, seatW, seatH);	 	 	
+            makeSeat(t.w/2 - seatW/2, t.h, seatW, seatH);	 	 	 	
+        } else if (t.w === 30 && t.h === 50) {
+            const seatW = seatHalf;	 	
+            const seatH = baseSeatSize;	
+            const v_spacing = (t.h - 2 * seatH) / 3;	
+            makeSeat(-seatW, v_spacing, seatW, seatH);	 	
+            makeSeat(-seatW, v_spacing * 2 + seatH, seatW, seatH);	 	
+            makeSeat(t.w, v_spacing, seatW, seatH);	 	
+            makeSeat(t.w, v_spacing * 2 + seatH, seatW, seatH);	 	 	
+        } else if (t.w === 50 && t.h === 30) {	
+            const seatW = baseSeatSize;	
+            const seatH = seatHalf;	
+            const h_spacing = (t.w - 2 * seatW) / 3;
+            makeSeat(h_spacing, -seatH, seatW, seatH);
+            makeSeat(h_spacing * 2 + seatW, -seatH, seatW, seatH);
+            makeSeat(h_spacing, t.h, seatW, seatH);
+            makeSeat(h_spacing * 2 + seatW, t.h, seatW, seatH);
+        } else if (t.w === 90 && t.h === 30) {
+            const seatW = baseSeatSize;	
+            const seatH = seatHalf;	 	
+            const h_spacing = t.w / 4;	
+            for(let i=0; i<3; i++){
+                const x_pos = h_spacing * (i+1) - seatW/2;
+                makeSeat(x_pos, -seatH, seatW, seatH);	 	
+                makeSeat(x_pos, t.h, seatW, seatH);	 	
+            }
+        }
+        return group;
+    }
 
-        if (tableRect.fill() === TABLE_COLOR) {
-            selectedTableIds.push(id);
+    function selectTable(id, evt) {
+        const group = layer.findOne('#g-' + id);
+        const tableRect = group.findOne('.main-table');
+        
+        // Check 1: Block if staff use only
+        if (tableRect.fill() === UNAVAILABLE_COLOR) {
+            alert('This table is reserved for staff walk-ins.');
+            return;
+        }
+        // Check 2: Block if filtered (too big/small/wasted capacity)
+        if (tableRect.fill() === FILTERED_COLOR) {
+            alert('Table is filtered for a party of ' + CURRENT_PARTY_SIZE + '.');
+            return;
+        }
+        // Check 3: Block if already booked by time
+        if (tableRect.fill() === BOOKED_COLOR) {
+            alert('This table is already booked at this time.');
+            return;
+        }
+
+        const idNumber = Number(id);
+        const index = selectedTableIds.indexOf(idNumber);
+        
+        const isShiftPressed = evt && (evt.shiftKey || evt.ctrlKey || evt.metaKey);
+        const isMulti = isShiftPressed || isMultiSelectMode;
+        	
+        if (index === -1 && !isMulti) {
+            stage.find('.main-table').forEach(rect => {
+                if (rect.fill() === TABLE_COLOR) {
+                    rect.stroke('#000');
+                    rect.strokeWidth(1);
+                }
+            });
+            selectedTableIds = [];
+        }
+
+
+        if (index === -1) {
+            const tableData = tableDataMap.get(idNumber);
+            const tableCapacityToAdd = getTableCapacity(tableData.w, tableData.h);
+            const newCapacity = getSelectedTablesCapacity() + tableCapacityToAdd;
+            	
+            if (isMultiSelectMode && isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, newCapacity)) {
+                alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${getSelectedTablesCapacity()}.`);
+                return;
+            }
+            	
+            if (newCapacity > 6 && !isMultiSelectMode) {
+                alert("You cannot select tables that total more than a 6-person capacity unless you start Group Selection mode.");
+                return;
+            }
+            	
+            selectedTableIds.push(idNumber);
             tableRect.stroke(HIGHLIGHT_COLOR);
             tableRect.strokeWidth(3);
+
+        } else {
+            if (isMulti || selectedTableIds.length === 1) {
+                selectedTableIds.splice(index, 1);
+                tableRect.stroke('#000');
+                tableRect.strokeWidth(1);
+            }
         }
-    });
-
-    const totalPence = calculateTotalPence();
-    updatePayButton(totalPence);
-
-    layer.draw();
-}
-
-async function loadTables() {
-    if (!URL_PARAMS.tenant_id) return false;	
-
-    // --- CRITICAL FIX: Hardcoded table positions for demo consistency ---
-    const tables = [
-        { id: 1, x: 235, y: 110, w: 90, h: 30, rotation: 0 },
-        { id: 2, x: 100, y: 30, w: 90, h: 30, rotation: 0 },
-        { id: 3, x: 100, y: 150, w: 30, h: 30, rotation: 0 },
-        { id: 4, x: 140, y: 220, w: 30, h: 30, rotation: 0 },
-        { id: 5, x: 180, y: 300, w: 50, h: 30, rotation: 90 },
-        { id: 6, x: 250, y: 330, w: 30, h: 30, rotation: 0 },
-        { id: 7, x: 30, y: 300, w: 50, h: 30, rotation: 90 },
-        { id: 8, x: 400, y: 100, w: 30, h: 30, rotation: 0 },
-        { id: 9, x: 20, y: 180, w: 30, h: 50, rotation: 0 },
-        { id: 10, x: 300, y: 240, w: 30, h: 30, rotation: 0 },
-        { id: 11, x: 40, y: 80, w: 30, h: 30, rotation: 0 },
-        { id: 12, x: 350, y: 350, w: 50, h: 30, rotation: 0 },
-        { id: 13, x: 400, y: 280, w: 30, h: 30, rotation: 0 },
-        { id: 14, x: 250, y: 180, w: 30, h: 30, rotation: 0 },
         
-        { id: 18, x: 140, y: 280, w: 30, h: 30, rotation: 0 },
-        { id: 19, x: 220, y: 280, w: 30, h: 30, rotation: 0 },
-        { id: 20, x: 300, y: 280, w: 30, h: 30, rotation: 0 },
-        { id: 21, x: 300, y: 180, w: 50, h: 30, rotation: 90 },
-    ].sort((a, b) => a.id - b.id);
-    // ------------------------------------------------------------------
-    
-    layer.destroyChildren();	
-    tableDataMap = new Map();
-    
-    tables.forEach(t => {
-        const price = getTablePrice(t.w, t.h);
-        tableDataMap.set(t.id, { id: t.id, price: price, w: t.w, h: t.h });
+        const totalPence = calculateTotalPence();
+        updatePayButton(totalPence);
 
-        const group = drawTable(t);
-        const tableRect = group.findOne('.main-table');
-        
-        group.offset({ x: tableRect.width()/2, y: tableRect.height()/2 });
-        group.x(t.x + tableRect.width()/2);
-        group.y(t.y + tableRect.height()/2);
-        group.rotation(t.rotation || 0);	
-    });
-    
-    layer.draw();	
-    loadBookings(); 
-}
-
-function drawTable(t) {
-    const group = new Konva.Group({	
-        x: t.x,	
-        y: t.y,	
-        id: 'g-' + t.id,
-        name: 'selectable-table'	
-    });
-    layer.add(group);
-
-    const tableCapacity = getTableCapacity(t.w, t.h);
-    let initialFill = STAFF_USE_TABLE_IDS.includes(t.id) ? UNAVAILABLE_COLOR : TABLE_COLOR;
-
-    const tableRect = new Konva.Rect({	
-        width: t.w,	
-        height: t.h,	
-        fill: initialFill,	
-        stroke: '#000',	
-        strokeWidth: 1,
-        name: 'main-table',
-        table_capacity: tableCapacity
-    });
-    group.add(tableRect);
-
-    group.on('click tap', (e) => selectTable(t.id, e.evt));
-
-    const baseSeatSize = 12;	
-    const seatHalf = baseSeatSize / 2;	
-
-    function makeSeat(x, y, w, h) {
-        group.add(new Konva.Rect({ width:w, height:h, fill:SEAT_COLOR, x:x, y:y }));
+        layer.draw();
     }
-    
-    if (t.w === 30 && t.h === 30) {
-        const seatW = baseSeatSize;	
-        const seatH = seatHalf;	 	
-        makeSeat(t.w/2 - seatW/2, -seatH, seatW, seatH);	 	 	
-        makeSeat(t.w/2 - seatW/2, t.h, seatW, seatH);	 	 	 	
-    } else if (t.w === 30 && t.h === 50) {
-        const seatW = seatHalf;	 	
-        const seatH = baseSeatSize;	
-        const v_spacing = (t.h - 2 * seatH) / 3;	
-        makeSeat(-seatW, v_spacing, seatW, seatH);	 	
-        makeSeat(-seatW, v_spacing * 2 + seatH, seatW, seatH);	 	
-        makeSeat(t.w, v_spacing, seatW, seatH);	 	
-        makeSeat(t.w, v_spacing * 2 + seatH, seatW, seatH);	 	 	
-    } else if (t.w === 50 && t.h === 30) {	
-        const seatW = baseSeatSize;	
-        const seatH = seatHalf;	
-        const h_spacing = (t.w - 2 * seatW) / 3;
-        makeSeat(h_spacing, -seatH, seatW, seatH);
-        makeSeat(h_spacing * 2 + seatW, -seatH, seatW, seatH);
-        makeSeat(h_spacing, t.h, seatW, seatH);
-        makeSeat(h_spacing * 2 + seatW, t.h, seatW, seatH);
-    } else if (t.w === 90 && t.h === 30) {
-        const seatW = baseSeatSize;	
-        const seatH = seatHalf;	 	
-        const h_spacing = t.w / 4;	
-        for(let i=0; i<3; i++){
-            const x_pos = h_spacing * (i+1) - seatW/2;
-            makeSeat(x_pos, -seatH, seatW, seatH);	 	
-            makeSeat(x_pos, t.h, seatW, seatH);	 	
+
+    function isWastedCapacityAllowedForBooking(partySize, totalCapacity) {
+        if (partySize === 0) return false;
+        const maxAllowedCapacity = partySize + 1;	
+        return totalCapacity > maxAllowedCapacity;
+    }
+
+    window.addEventListener('resize', resizeStage);
+
+    document.getElementById('multi-select-toggle').onclick = () => {
+        const toggleButton = document.getElementById('multi-select-toggle');	
+        
+        isMultiSelectMode = !isMultiSelectMode;
+        
+        if (isMultiSelectMode) {
+            toggleButton.dataset.active = 'true';
+            toggleButton.classList.add('active');
+            toggleButton.textContent = 'Exit Multi-Select Mode';
+            
+            if(selectedGroup) {
+                selectedGroup.findOne('.main-table').stroke('#000');
+                selectedGroup = null;
+            }
+            
+            layer.find('Group').forEach(group => group.draggable(false));	
+        } else {
+            toggleButton.dataset.active = 'false';
+            toggleButton.classList.remove('active');
+            toggleButton.textContent = 'Start Multi-Select Mode';
+            
+            selectedMultiTables.clear();
+            MULTI_BOOK_BUTTON.style.display = 'none';
+
+            layer.find('Group').forEach(group => group.draggable(true));
         }
-    }
-    return group;
-}
 
-function selectTable(id, evt) {
-    const group = layer.findOne('#g-' + id);
-    const tableRect = group.findOne('.main-table');
-    
-    // Check 1: Block if staff use only
-    if (tableRect.fill() === UNAVAILABLE_COLOR) {
-        alert('This table is reserved for staff walk-ins.');
-        return;
-    }
-    // Check 2: Block if filtered (too big/small/wasted capacity)
-    if (tableRect.fill() === FILTERED_COLOR) {
-        alert('Table is filtered for a party of ' + CURRENT_PARTY_SIZE + '.');
-        return;
-    }
-    // Check 3: Block if already booked by time
-    if (tableRect.fill() === BOOKED_COLOR) {
-        alert('This table is already booked at this time.');
-        return;
-    }
+        updateTableVisuals();
+    };
 
-    const idNumber = Number(id);
-    const index = selectedTableIds.indexOf(idNumber);
-    
-    const isShiftPressed = evt && (evt.shiftKey || evt.ctrlKey || evt.metaKey);
-    const isMulti = isShiftPressed || isMultiSelectMode;
-    	
-    if (index === -1 && !isMulti) {
-        stage.find('.main-table').forEach(rect => {
-            if (rect.fill() === TABLE_COLOR) {
-                rect.stroke('#000');
-                rect.strokeWidth(1);
+    payBtn.onclick = async () => {
+        if (selectedTableIds.length === 0) return;
+        	
+        document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
+        document.getElementById('party-size-hidden').placeholder = `Party Size (${CURRENT_PARTY_SIZE})`;
+        
+        await loadBookings();	
+        
+        const isAnySelectedTableBooked = selectedTableIds.some(id => {
+            const group = layer.findOne('#g-' + id);
+            return group.findOne('.main-table').fill() === BOOKED_COLOR;
+        });
+
+        if (isAnySelectedTableBooked) {
+            alert("Error: One or more selected tables were just booked. Please re-check availability and select again.");
+            updateTableVisuals();
+            return;
+        }
+        	
+        const totalCapacity = getSelectedTablesCapacity();
+        if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
+            alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${totalCapacity}.`);
+            return;
+        }
+
+        customerModal.style.display = 'flex';
+    };
+
+    // -------- Close button logic for Confirm Reservation Details modal --------
+    (function() {
+        const customerModalEl = document.getElementById('customer-modal');
+        const closeBtn = document.getElementById('close-customer-modal');
+
+        closeBtn.addEventListener('click', () => {
+            customerModalEl.style.display = 'none';
+        });
+
+        closeBtn.setAttribute('tabindex', '0');	
+        closeBtn.setAttribute('role', 'button');	
+        closeBtn.setAttribute('aria-label', 'Close dialog');
+
+        closeBtn.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') {
+                ev.preventDefault();
+                customerModalEl.style.display = 'none';
             }
         });
+
+        customerModalEl.addEventListener('click', (ev) => {
+            if (ev.target === customerModalEl) {
+                customerModalEl.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Escape' && customerModalEl.style.display === 'flex') {
+                customerModalEl.style.display = 'none';
+            }
+        });
+    })();
+
+    customerForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const customerName = document.getElementById('customer-name').value;
+        const partySize = parseInt(document.getElementById('party-size-hidden').value);	
+        const email = document.getElementById('customer-email').value;
+
+        if (!customerName || isNaN(partySize) || partySize <= 0 || !email) {
+            alert('Please fill out all fields correctly.');
+            return;
+        }
+
+        const totalCapacity = getSelectedTablesCapacity();
+        	
+        if (isWastedCapacityAllowedForBooking(partySize, totalCapacity)) {
+            alert(`Error: Your party of ${partySize} cannot reserve tables with a combined capacity of ${totalCapacity}. Please reduce the number of selected tables.`);
+            return;
+        }
+        	
+        let requiredMinCapacity;
+        if (partySize <= 2) requiredMinCapacity = 2;
+        else if (partySize <= 4) requiredMinCapacity = 4;
+        else if (partySize <= 6) requiredMinCapacity = 6;
+        else requiredMinCapacity = 6; 
+
+        if (totalCapacity < requiredMinCapacity) {
+            alert(`Error: Your party of ${partySize} requires a minimum combined capacity of ${requiredMinCapacity}. Please select a larger table or combination of tables.`);
+            return;
+        }
+
+        if (partySize > totalCapacity) {
+            alert(`Error: Your party size (${partySize}) exceeds the total selected table capacity (${totalCapacity}).`);
+            return;
+        }
+
+        customerModal.style.display = 'none';	
+
+        // --- DEMO FIX: REPLACE REAL CHECKOUT WITH ALERT ---
+        const totalDollars = (calculateTotalPence() / 100).toFixed(2);
+        alert(`DEMO SUCCESS! A reservation for ${customerName} (Party of ${partySize}) for tables ${selectedTableIds.join(', ')} totaling £${totalDollars} would be processed.`);
+        
+        // Resetting the selection after the demo "success"
         selectedTableIds = [];
-    }
-
-
-    if (index === -1) {
-        const tableData = tableDataMap.get(idNumber);
-        const tableCapacityToAdd = getTableCapacity(tableData.w, tableData.h);
-        const newCapacity = getSelectedTablesCapacity() + tableCapacityToAdd;
-        	
-        if (isMultiSelectMode && isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, newCapacity)) {
-            alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${getSelectedTablesCapacity()}.`);
-            return;
-        }
-        	
-        if (newCapacity > 6 && !isMultiSelectMode) {
-            alert("You cannot select tables that total more than a 6-person capacity unless you start Group Selection mode.");
-            return;
-        }
-        	
-        selectedTableIds.push(idNumber);
-        tableRect.stroke(HIGHLIGHT_COLOR);
-        tableRect.strokeWidth(3);
-
-    } else {
-        if (isMulti || selectedTableIds.length === 1) {
-            selectedTableIds.splice(index, 1);
-            tableRect.stroke('#000');
-            tableRect.strokeWidth(1);
-        }
-    }
-    
-    const totalPence = calculateTotalPence();
-    updatePayButton(totalPence);
-
-    layer.draw();
-}
-
-function isWastedCapacityAllowedForBooking(partySize, totalCapacity) {
-    if (partySize === 0) return false;
-    const maxAllowedCapacity = partySize + 1;	
-    return totalCapacity > maxAllowedCapacity;
-}
-
-window.addEventListener('resize', resizeStage);
-
-document.getElementById('multi-select-toggle').onclick = () => {
-    const toggleButton = document.getElementById('multi-select-toggle');	
-    
-    isMultiSelectMode = !isMultiSelectMode;
-    
-    if (isMultiSelectMode) {
-        toggleButton.dataset.active = 'true';
-        toggleButton.classList.add('active');
-        toggleButton.textContent = 'Exit Multi-Select Mode';
-        
-        if(selectedGroup) {
-            selectedGroup.findOne('.main-table').stroke('#000');
-            selectedGroup = null;
-        }
-        
-        layer.find('Group').forEach(group => group.draggable(false));	
-    } else {
-        toggleButton.dataset.active = 'false';
-        toggleButton.classList.remove('active');
-        toggleButton.textContent = 'Start Multi-Select Mode';
-        
-        selectedMultiTables.clear();
-        MULTI_BOOK_BUTTON.style.display = 'none';
-
-        layer.find('Group').forEach(group => group.draggable(true));
-    }
-
-    updateTableVisuals();
-};
-
-payBtn.onclick = async () => {
-    if (selectedTableIds.length === 0) return;
-    	
-    document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
-    document.getElementById('party-size-hidden').placeholder = `Party Size (${CURRENT_PARTY_SIZE})`;
-    
-    await loadBookings();	
-    
-    const isAnySelectedTableBooked = selectedTableIds.some(id => {
-        const group = layer.findOne('#g-' + id);
-        return group.findOne('.main-table').fill() === BOOKED_COLOR;
-    });
-
-    if (isAnySelectedTableBooked) {
-        alert("Error: One or more selected tables were just booked. Please re-check availability and select again.");
         updateTableVisuals();
-        return;
-    }
-    	
-    const totalCapacity = getSelectedTablesCapacity();
-    if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
-        alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${totalCapacity}.`);
-        return;
-    }
-
-    customerModal.style.display = 'flex';
-};
-
-// -------- Close button logic for Confirm Reservation Details modal --------
-(function() {
-    const customerModalEl = document.getElementById('customer-modal');
-    const closeBtn = document.getElementById('close-customer-modal');
-
-    closeBtn.addEventListener('click', () => {
-        customerModalEl.style.display = 'none';
+        // ----------------------------------------------------
     });
-
-    closeBtn.setAttribute('tabindex', '0');	
-    closeBtn.setAttribute('role', 'button');	
-    closeBtn.setAttribute('aria-label', 'Close dialog');
-
-    closeBtn.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Enter' || ev.key === ' ') {
-            ev.preventDefault();
-            customerModalEl.style.display = 'none';
-        }
-    });
-
-    customerModalEl.addEventListener('click', (ev) => {
-        if (ev.target === customerModalEl) {
-            customerModalEl.style.display = 'none';
-        }
-    });
-
-    document.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Escape' && customerModalEl.style.display === 'flex') {
-            customerModalEl.style.display = 'none';
-        }
-    });
-})();
-
-customerForm.addEventListener('submit', async function(e) {
-    e.preventDefault();
-
-    const customerName = document.getElementById('customer-name').value;
-    const partySize = parseInt(document.getElementById('party-size-hidden').value);	
-    const email = document.getElementById('customer-email').value;
-
-    if (!customerName || isNaN(partySize) || partySize <= 0 || !email) {
-        alert('Please fill out all fields correctly.');
-        return;
-    }
-
-    const totalCapacity = getSelectedTablesCapacity();
     	
-    if (isWastedCapacityAllowedForBooking(partySize, totalCapacity)) {
-        alert(`Error: Your party of ${partySize} cannot reserve tables with a combined capacity of ${totalCapacity}. Please reduce the number of selected tables.`);
-        return;
-    }
-    	
-    let requiredMinCapacity;
-    if (partySize <= 2) requiredMinCapacity = 2;
-    else if (partySize <= 4) requiredMinCapacity = 4;
-    else if (partySize <= 6) requiredMinCapacity = 6;
-    else requiredMinCapacity = 6; 
+    (async () => {
+        getUrlParams();
+        logInitialClick();
+        	
+        // --- CRITICAL DEMO FIX: FORCE PARTY SIZE TO 4 ---
+        CURRENT_PARTY_SIZE = 4;
+        	
+        // Hide and bypass the prompt, as the size is fixed
+        document.getElementById('party-prompt-modal').style.display = 'none';	
 
-    if (totalCapacity < requiredMinCapacity) {
-        alert(`Error: Your party of ${partySize} requires a minimum combined capacity of ${requiredMinCapacity}. Please select a larger table or combination of tables.`);
-        return;
-    }
+        // Set the hidden party size field for the payment modal to use the autodetected size
+        document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
 
-    if (partySize > totalCapacity) {
-        alert(`Error: Your party size (${partySize}) exceeds the total selected table capacity (${totalCapacity}).`);
-        return;
-    }
+        // Load the map
+        loadFloorplan(loadTables);
+        window.addEventListener('resize', resizeStage); // Re-attached resize handler
+    })();
 
-    customerModal.style.display = 'none';	
-
-    // --- DEMO FIX: REPLACE REAL CHECKOUT WITH ALERT ---
-    const totalDollars = (calculateTotalPence() / 100).toFixed(2);
-    alert(`DEMO SUCCESS! A reservation for ${customerName} (Party of ${partySize}) for tables ${selectedTableIds.join(', ')} totaling £${totalDollars} would be processed.`);
-    
-    // Resetting the selection after the demo "success"
-    selectedTableIds = [];
-    updateTableVisuals();
-    // ----------------------------------------------------
-});
-	
-(async () => {
-    getUrlParams();
-    logInitialClick();
-    	
-    // --- CRITICAL DEMO FIX: FORCE PARTY SIZE TO 4 ---
-    CURRENT_PARTY_SIZE = 4;
-    	
-    // Hide and bypass the prompt, as the size is fixed
-    document.getElementById('party-prompt-modal').style.display = 'none';	
-
-    // Set the hidden party size field for the payment modal to use the autodetected size
-    document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
-
-    // Load the map
-    window.addEventListener('resize', resizeStage);
-    loadFloorplan(loadTables);
-})();
+}); // End of DOMContentLoaded event listener
 </script>
+</body>
+</html>
