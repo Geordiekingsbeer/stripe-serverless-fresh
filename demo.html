@@ -594,7 +594,6 @@ window.onload = function() {
             
             backgroundLayer.draw();
             
-            // CRITICAL FIX: Run resize AFTER image is loaded and BEFORE tables are drawn
             resizeStage();	
             
             if (callback) callback();
@@ -682,6 +681,7 @@ window.onload = function() {
         if (!URL_PARAMS.tenant_id) return false;	
 
         // --- CRITICAL FIX: Hardcoded table positions for demo consistency ---
+        // This is the array of positions you confirmed from your pick-seat.html
         const tables = [
             { id: 1, x: 235, y: 110, w: 90, h: 30, rotation: 0 },
             { id: 2, x: 100, y: 30, w: 90, h: 30, rotation: 0 },
