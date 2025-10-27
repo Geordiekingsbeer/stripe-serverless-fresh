@@ -594,6 +594,7 @@ window.onload = function() {
             
             backgroundLayer.draw();
             
+            // CRITICAL FIX: Run resize AFTER image is loaded and BEFORE tables are drawn
             resizeStage();	
             
             if (callback) callback();
