@@ -340,15 +340,13 @@
 	min-width: 180px; 
 	max-width: 100%; 
 }
-
-/* ADMIN UI is not needed in the final code, removing CSS for it */
 	</style>
 </head>
 <body>
 	<h1 class="header-title" style="font-size: 24px;">Reserve Your Premium Table (DEMO)</h1>
 	<p class="subtitle" style="color: #1976d2; font-weight: 600;">Default Party Size: 4 Guests</p>
 
-    <div id="datetime-controls" style="display: none;">
+	<div id="datetime-controls" style="display: none;">
 	</div>
 
 	<button id="multi-select-toggle" data-active="false">Start Multi-Select Mode</button>
@@ -361,8 +359,7 @@
 		<div class="legend-item"><span class="legend-color" style="background-color: #b7d7a8;"></span>Premium Available</div>
 		<div class="legend-item"><span class="legend-color" style="background-color: #e0e0e0;"></span>Booked (Premium)</div>
 		<div class="legend-item"><span class="legend-color" style="background-color: #ffffff;"></span>Staff Use Only (N/A)</div>
-		<div class="legend-item"><span class="legend-color" style="background-color: #cccccc;"></span>Filtered (Too Small/Large for 4)</div>	
-	</div>
+		</div>
 	
 	<button id="payBtn" class="green-action-btn" disabled>Pay for 0 Tables – Stripe (DEMO DISABLED)</button>
 
@@ -461,7 +458,11 @@ window.onload = function() {
     const MULTI_BOOK_BUTTON = { style: { display: 'none' } };
         
     let CURRENT_PARTY_SIZE = 0;
-    const FILTERED_COLOR = '#cccccc';
+    
+    // --- FIX: Change FILTERED_COLOR to match BOOKED_COLOR ---
+    const BOOKED_COLOR = '#e0e0e0';
+    const FILTERED_COLOR = BOOKED_COLOR; // Tables filtered by size will appear booked/unavailable
+    // --------------------------------------------------------
 
     function generateUniqueId() {
         return 'AUTO-' + Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -480,7 +481,6 @@ window.onload = function() {
     const PRICE_6_SEATER = 1499;
 
     const TABLE_COLOR = '#b7d7a8';		
-    const BOOKED_COLOR = '#e0e0e0';		
     const UNAVAILABLE_COLOR = '#ffffff';
     const SEAT_COLOR = '#555';	
     const HIGHLIGHT_COLOR = '#ffeb3b';
@@ -643,6 +643,7 @@ window.onload = function() {
                 }
 
                 if (isFiltered) {
+                    // Tables filtered by size will now use the BOOKED_COLOR (e0e0e0)
                     tableRect.fill(FILTERED_COLOR);
                 }	
                 // Priority 2: Booked Status
@@ -804,7 +805,7 @@ window.onload = function() {
         }
         // Check 2: Block if filtered (too big/small/wasted capacity)
         if (tableRect.fill() === FILTERED_COLOR) {
-            alert('Table is filtered for a party of ' + CURRENT_PARTY_SIZE + '.');
+            alert('Table is currently unavailable.');
             return;
         }
         // Check 3: Block if already booked by time
