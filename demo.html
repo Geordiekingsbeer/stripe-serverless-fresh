@@ -408,7 +408,8 @@
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2 "></script>
 	<script src="https://unpkg.com/konva@9/konva.min.js "></script>
 	<script>
-document.addEventListener('DOMContentLoaded', (event) => {
+// --- Wrap all logic in window.onload for absolute certainty that the image and container are ready ---
+window.onload = function() {
     
     const STAGE_WIDTH = 480;	
     const STAGE_HEIGHT = 480;	
@@ -433,7 +434,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     const container = document.getElementById('container');
 
-    // CRITICAL: Check if container was found before proceeding
     if (!container) {
         console.error("Critical Error: 'container' element not found in the DOM.");
         return; 
@@ -1021,10 +1021,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         // Load the map
         loadFloorplan(loadTables);
-        window.addEventListener('resize', resizeStage); // Re-attached resize handler
     })();
 
-}); // End of DOMContentLoaded event listener
+}; // End of window.onload
 </script>
 </body>
 </html>
