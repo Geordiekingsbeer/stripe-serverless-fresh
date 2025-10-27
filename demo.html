@@ -715,9 +715,12 @@ window.onload = function() {
             const group = drawTable(t);
             const tableRect = group.findOne('.main-table');
             
-            group.offset({ x: tableRect.width()/2, y: tableRect.height()/2 });
-            group.x(t.x + tableRect.width()/2);
-            group.y(t.y + tableRect.height()/2);
+            // --- FIX: Remove offset and simplify positioning to raw coordinates ---
+            group.x(t.x + tableRect.width()/2); // Revert to previous position logic (should use raw x,y)
+            group.y(t.y + tableRect.height()/2); 
+            group.offset({ x: tableRect.width()/2, y: tableRect.height()/2 }); // Keep offset AFTER setting position
+            // --- END FIX ---
+            
             group.rotation(t.rotation || 0);	
         });
         
