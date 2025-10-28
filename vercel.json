@@ -25,14 +25,11 @@
   "rewrites": [
     { "source": "/admin-booking", "destination": "/api/admin-create-booking" },
     
-    // --- FIX: Reroute traffic from old file name to new file name ---
     { "source": "/pick-seat.html", "destination": "/select-table.html" },
     
-    // --- NEW: Add routing for the renamed file and old files ---
     { "source": "/select-table.html", "destination": "/select-table.html" },
     { "source": "/demo.html", "destination": "/demo.html" },
     
-    // NOTE: If you deleted reports.html, you must remove this line.
     { "source": "/reports.html", "destination": "/reports.html" }, 
     
     { "source": "/admin.html", "destination": "/admin.html" },
