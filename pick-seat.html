@@ -314,45 +314,6 @@
 	max-width: 100%; 
 }
 	</style>
-    
-    <script>
-        // 1. Get Tenant ID (R-RESTO-001 by default)
-        const urlParams = new URLSearchParams(window.location.search);
-        const TENANT_ID = urlParams.get('tenant_id') || 'R-RESTO-001'; 
-        
-        // 2. Define global variable for the dynamically loaded data
-        window.CLIENT_TABLES = [];
-        
-        // 3. Define a global function to load the external script content synchronously/reliably
-        function loadClientConfig() {
-            return new Promise((resolve, reject) => {
-                const configPath = `/${TENANT_ID}.js`;
-                fetch(configPath)
-                    .then(response => {
-                        if (!response.ok) {
-                            // If the client file (e.g., R-NY-001.js) is missing, we use the fallback route below.
-                            throw new Error(`Failed to load config file: ${configPath}`);
-                        }
-                        return response.text();
-                    })
-                    .then(scriptText => {
-                        // CRITICAL FIX: Use eval() to run the script text and define CLIENT_TABLES globally
-                        // This bypasses the SyntaxError conflict.
-                        eval(scriptText); 
-                        if (typeof window.CLIENT_TABLES === 'undefined' || !Array.isArray(window.CLIENT_TABLES)) {
-                             throw new Error("Config file loaded but did not define CLIENT_TABLES array.");
-                        }
-                        resolve(window.CLIENT_TABLES);
-                    })
-                    .catch(error => {
-                        console.error(`[CONFIG ERROR] Could not load ${configPath}. Reason:`, error.message);
-                        // Resolve with an empty array so the fallback logic runs smoothly
-                        resolve([]); 
-                    });
-            });
-        }
-    </script>
-
 </head>
 <body>
 	<h1 class="header-title" style="font-size: 24px;">Reserve Your Premium Table</h1>
@@ -452,6 +413,75 @@
     let CURRENT_PARTY_SIZE = 0;
     const FILTERED_COLOR = '#cccccc';
 
+	// DYNAMIC CONFIG LOADER: Define TENANT_ID and load external script
+	const urlParams = new URLSearchParams(window.location.search);
+	const TENANT_ID = urlParams.get('tenant_id') || 'R-RESTO-001'; 
+	
+    // 1. Define window.CLIENT_TABLES globally (required for the external script to populate)
+    window.CLIENT_TABLES = [];
+
+    // 2. Load the external script file
+	const configScript = document.createElement('script');
+	configScript.src = `/${TENANT_ID}.js`; 
+	document.head.appendChild(configScript);
+	
+	// 3. Define the core function that waits for the data
+    function initializeMultiTenant() {
+        // Wait 50ms for external script to load the CLIENT_TABLES variable
+        setTimeout(function() {
+            if (window.CLIENT_TABLES && window.CLIENT_TABLES.length > 0) {
+                // Config is ready! Proceed with initialization
+                runApplication();
+            } else {
+                // If config is still not ready, try again (to trigger the fallback logic)
+                console.warn(`Configuration for ${TENANT_ID}.js not ready. Retrying...`);
+                // Use the fallback logic inside runApplication directly if this fails too many times
+                runApplication(); 
+            }
+        }, 50);
+    }
+    
+    // 4. Main Application Entry Point
+    function runApplication() {
+        
+        getUrlParams();
+        logInitialClick();
+        
+        // CRITICAL FIX: Set party size from URL or prompt
+        let urlPartySize = CURRENT_PARTY_SIZE; 
+        
+        if (isNaN(urlPartySize) || urlPartySize < 1) {
+            urlPartySize = 0;
+        }
+        CURRENT_PARTY_SIZE = urlPartySize;
+
+
+        if (CURRENT_PARTY_SIZE > 0) {
+            document.getElementById('party-prompt-modal').style.display = 'none';
+            document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
+            loadFloorplan(loadTables);
+        } else {
+            document.getElementById('party-prompt-modal').style.display = 'flex';
+        }
+
+        // Event listener for the initial party size prompt button (if modal is shown)
+        document.getElementById('set-party-size').onclick = () => {
+            const sizeInput = document.getElementById('initial-party-size');
+            const size = parseInt(sizeInput.value);
+            if (isNaN(size) || size < 1) {
+                alert('Please enter a valid party size.');
+                return;
+            }
+            CURRENT_PARTY_SIZE = size;
+            document.getElementById('party-prompt-modal').style.display = 'none';
+            document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
+            
+            // Re-run floorplan load with the final party size set
+            loadFloorplan(loadTables);
+        };
+    }
+    
+    
     function generateUniqueId() {
         return 'AUTO-' + Date.now().toString(36) + Math.random().toString(36).substring(2);
     }
@@ -606,6 +636,7 @@
 			
 			if (callback) callback();
 		};
+		// CRITICAL FIX: Look for the image in the ROOT directory
 		imageObj.src = `/${URL_PARAMS.tenant_id}.png?v=` + new Date().getTime();	
 	}
 
@@ -626,7 +657,63 @@
 
 
 	function updateTableVisuals() {
-		// ... (rest of updateTableVisuals logic remains the same) ...
+		const currentSelection = [...selectedTableIds];	
+		selectedTableIds = [];	
+		
+		stage.find('.main-table').forEach(tableRect => {
+			const group = tableRect.getParent();
+			const tableId = Number(group.id().substring(2));	
+			
+			const data = tableDataMap.get(tableId);
+			const tableCapacity = data ? getTableCapacity(data.w, data.h) : 0;
+			
+			// 1. Check for Staff Use Only - This always overrides everything
+			if (STAFF_USE_TABLE_IDS.includes(tableId)) {
+				tableRect.fill(UNAVAILABLE_COLOR);
+			} else {
+				// 2. Determine Filter/Booked Status
+				const wastedCapacity = isWastedCapacity(tableCapacity);
+				const tooSmall = isTooSmall(tableCapacity);
+
+				const isBooked = currentBookings.some(b => Number(b.table_id) === tableId);
+				
+				let isFiltered = false;
+
+				if (wastedCapacity || (!isMultiSelectMode && tooSmall)) {
+					isFiltered = true;
+				}
+
+				if (isFiltered) {
+					tableRect.fill(FILTERED_COLOR);
+				}	
+				else if (isBooked) {
+					tableRect.fill(BOOKED_COLOR);
+				}	
+				else {
+					tableRect.fill(TABLE_COLOR);
+				}
+			}
+			
+			tableRect.stroke('#000');	
+			tableRect.strokeWidth(1);
+		});
+		
+		currentSelection.forEach(id => {
+			const group = layer.findOne('#g-' + id);
+			if (!group) return;	
+			const tableRect = group.findOne('.main-table');
+
+			if (tableRect.fill() === TABLE_COLOR) {
+				selectedTableIds.push(id);
+				tableRect.stroke(HIGHLIGHT_COLOR);
+				tableRect.strokeWidth(3);
+			}
+		});
+
+		const totalPence = calculateTotalPence();
+		updatePayButton(totalPence);
+
+		layer.draw();
 	}
 	
 	async function loadTables() {
@@ -634,7 +721,7 @@
 
 		let tables = [];
 		
-        // --- CRITICAL FIX: Use the globally defined data ---
+        // --- 1. Get tables from the global variable defined by the external script ---
         if (typeof window.CLIENT_TABLES !== 'undefined' && Array.isArray(window.CLIENT_TABLES) && window.CLIENT_TABLES.length > 0) {
              tables = window.CLIENT_TABLES;
              console.log(`Layout Loaded: Using configuration from ${URL_PARAMS.tenant_id}.js`);
@@ -682,18 +769,360 @@
 		});
 		
 		layer.draw();	
+		loadBookings(); 
 	}
 	
 	function drawTable(t) {
-		// ... (drawTable logic remains the same) ...
+		const group = new Konva.Group({	
+			x: t.x,	
+			y: t.y,	
+			id: 'g-' + t.id,
+			name: 'selectable-table'	
+		});
+		layer.add(group);
+
+        // Determine table capacity once
+        const tableCapacity = getTableCapacity(t.w, t.h);
+        	
+        // Set initial color based ONLY on staff status. Filtering will be applied later in updateTableVisuals.
+        let initialFill = STAFF_USE_TABLE_IDS.includes(t.id) ? UNAVAILABLE_COLOR : TABLE_COLOR;
+
+
+		const tableRect = new Konva.Rect({	
+			width: t.w,	
+			height: t.h,	
+			fill: initialFill,	
+			stroke: '#000',	
+			strokeWidth: 1,
+			name: 'main-table',
+            table_capacity: tableCapacity
+		});
+		group.add(tableRect);
+
+		group.on('click tap', (e) => selectTable(t.id, e.evt));
+
+		const baseSeatSize = 12;	
+		const seatHalf = baseSeatSize / 2;	
+
+		function makeSeat(x, y, w, h) {
+			group.add(new Konva.Rect({ width:w, height:h, fill:SEAT_COLOR, x:x, y:y }));
+		}
+		
+		if (t.w === 30 && t.h === 30) {
+			const seatW = baseSeatSize;	
+			const seatH = seatHalf;	 	
+			makeSeat(t.w/2 - seatW/2, -seatH, seatW, seatH);	 	 	
+			makeSeat(t.w/2 - seatW/2, t.h, seatW, seatH);	 	 	 	
+		} else if (t.w === 30 && t.h === 50) {
+			const seatW = seatHalf;	 	
+			const seatH = baseSeatSize;	
+			const v_spacing = (t.h - 2 * seatH) / 3;	
+			makeSeat(-seatW, v_spacing, seatW, seatH);	 	
+			makeSeat(-seatW, v_spacing * 2 + seatH, seatW, seatH);	 	
+			makeSeat(t.w, v_spacing, seatW, seatH);	 	
+			makeSeat(t.w, v_spacing * 2 + seatH, seatW, seatH);	 	 	
+		} else if (t.w === 50 && t.h === 30) {	
+			const seatW = baseSeatSize;	
+			const seatH = seatHalf;	
+			const h_spacing = (t.w - 2 * seatW) / 3;
+			makeSeat(h_spacing, -seatH, seatW, seatH);
+			makeSeat(h_spacing * 2 + seatW, -seatH, seatW, seatH);
+			makeSeat(h_spacing, t.h, seatW, seatH);
+			makeSeat(h_spacing * 2 + seatW, t.h, seatW, seatH);
+		} else if (t.w === 90 && t.h === 30) {
+			const seatW = baseSeatSize;	
+			const seatH = seatHalf;	 	
+			const h_spacing = t.w / 4;	
+			for(let i=0; i<3; i++){
+				const x_pos = h_spacing * (i+1) - seatW/2;
+				makeSeat(x_pos, -seatH, seatW, seatH);	 	
+				makeSeat(x_pos, t.h, seatW, seatH);	 	
+			}
+		}
+		return group;
 	}
-	
+
+	function selectTable(id, evt) {
+		const group = layer.findOne('#g-' + id);
+		const tableRect = group.findOne('.main-table');
+		
+		// Check 1: Block if staff use only
+		if (tableRect.fill() === UNAVAILABLE_COLOR) {
+			alert('This table is reserved for staff walk-ins.');
+			return;
+		}
+        // Check 2: Block if filtered (too big/small/wasted capacity)
+        if (tableRect.fill() === FILTERED_COLOR) {
+			alert('Table unavailable.');
+			return;
+		}
+        // Check 3: Block if already booked by time
+		if (tableRect.fill() === BOOKED_COLOR) {
+			alert('This table is already booked at this time.');
+			return;
+		}
+
+		const idNumber = Number(id);
+		const index = selectedTableIds.indexOf(idNumber);
+		
+		const isShiftPressed = evt && (evt.shiftKey || evt.ctrlKey || evt.metaKey);
+		const isMulti = isShiftPressed || isMultiSelectMode;
+        	
+        // FIX: Clear existing selection if NOT in multi-select mode and a new table is clicked.
+        if (index === -1 && !isMulti) {
+            stage.find('.main-table').forEach(rect => {
+                // Only un-stroke tables that are currently available (TABLE_COLOR)
+                if (rect.fill() === TABLE_COLOR) {
+                    rect.stroke('#000');
+                    rect.strokeWidth(1);
+                }
+            });
+            selectedTableIds = [];
+        }
+
+
+        // Capacity check for adding tables (only runs if adding a table, index === -1)
+        if (index === -1) {
+            const tableData = tableDataMap.get(idNumber);
+            const tableCapacityToAdd = getTableCapacity(tableData.w, data.h);
+            const newCapacity = getSelectedTablesCapacity() + tableCapacityToAdd;
+            	
+            // --- CHECK: Real-time Multi-Select Buffer Check ---
+            if (isMultiSelectMode && isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, newCapacity)) {
+                alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${getSelectedTablesCapacity()}.`);
+                return;
+            }
+            // --- END CHECK ---
+            	
+            // Enforce the rule: Individual parties cannot select more than 6 capacity total unless using multi-select mode.
+            if (newCapacity > 6 && !isMultiSelectMode) {
+                alert("You cannot select tables that total more than a 6-person capacity unless you start Group Selection mode.");
+                return;
+            }
+            	
+            selectedTableIds.push(idNumber);
+            tableRect.stroke(HIGHLIGHT_COLOR);
+            tableRect.strokeWidth(3);
+
+        } else {
+            // Remove table from selection
+            if (isMulti || selectedTableIds.length === 1) {
+                selectedTableIds.splice(index, 1);
+                tableRect.stroke('#000');
+                tableRect.strokeWidth(1);
+            }
+        }
+		
+		const totalPence = calculateTotalPence();
+		updatePayButton(totalPence);
+
+		layer.draw();
+	}
+
+    // Helper function to determine if the selected capacity is excessively wasteful
+    function isWastedCapacityAllowedForBooking(partySize, totalCapacity) {
+        if (partySize === 0) return false;
+        const maxAllowedCapacity = partySize + 1;	
+        return totalCapacity > maxAllowedCapacity;
+    }
+
+	window.addEventListener('resize', resizeStage);
+
+	document.getElementById('multi-select-toggle').onclick = () => {
+		const toggleButton = document.getElementById('multi-select-toggle');	
+		
+		isMultiSelectMode = !isMultiSelectMode;
+		
+		if (isMultiSelectMode) {
+			toggleButton.dataset.active = 'true';
+			toggleButton.classList.add('active');
+			toggleButton.textContent = 'Exit Multi-Select Mode';
+			
+			if(selectedGroup) {
+				selectedGroup.findOne('.main-table').stroke('#000');
+				selectedGroup = null;
+			}
+			
+			layer.find('Group').forEach(group => group.draggable(false));	
+		} else {
+			toggleButton.dataset.active = 'false';
+			toggleButton.classList.remove('active');
+			toggleButton.textContent = 'Start Multi-Select Mode';
+			
+			selectedMultiTables.clear();
+			MULTI_BOOK_BUTTON.style.display = 'none';
+
+			layer.find('Group').forEach(group => group.draggable(true));
+		}
+
+		updateTableVisuals();
+	};
+
+	payBtn.onclick = async () => {
+		if (selectedTableIds.length === 0) return;
+        
+        // Error check if URL parameters are missing
+        if (!URL_PARAMS.booking_date || !URL_PARAMS.booking_time) {
+             alert('Error: Booking details not found. Please ensure the link was opened correctly.');
+             return;
+        }
+
+        // Set the hidden party size field for the checkout modal
+        document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
+        document.getElementById('party-size-hidden').placeholder = `Party Size (${CURRENT_PARTY_SIZE})`;
+		
+		await loadBookings(); 
+		
+		const isAnySelectedTableBooked = selectedTableIds.some(id => {
+			const group = layer.findOne('#g-' + id);
+			return group.findOne('.main-table').fill() === BOOKED_COLOR;
+		});
+
+		if (isAnySelectedTableBooked) {
+			alert("Error: One or more selected tables were just booked. Please re-check availability and select again.");
+			updateTableVisuals();
+			return;
+		}
+        
+        // Final Check 1: Check for EXCESSIVE capacity before opening the payment modal
+        const totalCapacity = getSelectedTablesCapacity();
+        if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
+            alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${totalCapacity}.`);
+            return;
+        }
+
+		customerModal.style.display = 'flex';
+	};
+
+	// -------- Close button logic for Confirm Reservation Details modal --------
+(function() {
+    const customerModalEl = document.getElementById('customer-modal');
+    const closeBtn = document.getElementById('close-customer-modal');
+
+    // Basic click: hide the modal
+    closeBtn.addEventListener('click', () => {
+        customerModalEl.style.display = 'none';
+    });
+
+    // Make the close button keyboard-friendly (Enter/Space)
+    closeBtn.setAttribute('tabindex', '0');	
+    closeBtn.setAttribute('role', 'button');	
+    closeBtn.setAttribute('aria-label', 'Close dialog');
+
+    closeBtn.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault();
+            customerModalEl.style.display = 'none';
+        }
+    });
+
+    // Close modal when clicking outside the modal-content (optional but common UX)
+    customerModalEl.addEventListener('click', (ev) => {
+        if (ev.target === customerModalEl) {
+            customerModalEl.style.display = 'none';
+        }
+    });
+
+    // Close modal on Escape key (global)
+    document.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Escape' && customerModalEl.style.display === 'flex') {
+            customerModalEl.style.display = 'none';
+        }
+    });
+})();
+
+	customerForm.addEventListener('submit', async function(e) {
+		e.preventDefault();
+
+        getUrlParams();	
+
+		const customerName = document.getElementById('customer-name').value;
+		const partySize = parseInt(document.getElementById('party-size-hidden').value);	
+		const email = document.getElementById('customer-email').value;
+        const receiveOffers = document.getElementById('future-offers-optin').checked;
+
+		if (!customerName || isNaN(partySize) || partySize <= 0 || !email) {
+			alert('Please fill out all fields correctly.');
+			return;
+		}
+
+        const totalCapacity = getSelectedTablesCapacity();
+        	
+        // Final Check 1: Check for EXCESSIVE capacity here before payment processing
+        if (isWastedCapacityAllowedForBooking(partySize, totalCapacity)) {
+            alert(`Error: Your party of ${partySize} cannot reserve tables with a combined capacity of ${totalCapacity}. Please reduce the number of selected tables.`);
+			return;
+        }
+        	
+
+        // Final Check 2: Enforce Minimum Capacity in ALL MODES
+        let requiredMinCapacity;
+        if (partySize <= 2) requiredMinCapacity = 2;
+        else if (partySize <= 4) requiredMinCapacity = 4;
+        else if (partySize <= 6) requiredMinCapacity = 6;
+        else requiredMinCapacity = 6; // Max single table capacity
+
+        if (totalCapacity < requiredMinCapacity) {
+             alert(`Error: Your party of ${partySize} requires a minimum combined capacity of ${requiredMinCapacity}. Please select a larger table or combination of tables.`);
+             return;
+        }
+
+        // Final Check 3: Max Capacity Check (Party size cannot exceed total selected table capacity)
+        if (partySize > totalCapacity) {
+             alert(`Error: Your party size (${partySize}) exceeds the total selected table capacity (${totalCapacity}).`);
+             return;
+        }
+
+		customerModal.style.display = 'none';	
+
+        // Date and Time are pulled from URL_PARAMS
+		const selectedDate = URL_PARAMS.booking_date;
+		const selectedTime = URL_PARAMS.booking_time;
+		
+		const totalPence = calculateTotalPence();	
+		
+		if (totalPence === 0) {
+			alert("Error: Selected tables have no defined price (Total is 0).");
+			return;
+		}
+
+		try {
+			const res = await fetch('https://stripe-serverless-fresh.vercel.app/api/create-checkout ', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({	
+					table_ids: selectedTableIds,	
+					email: email,
+					booking_date: selectedDate,
+					booking_time: selectedTime,
+					total_pence: totalPence,
+					customer_name: customerName,
+					party_size: partySize,
+					tenant_id: URL_PARAMS.tenant_id,
+					booking_ref: URL_PARAMS.booking_ref,
+                    receive_offers: receiveOffers
+				})
+			});
+			
+			const data = await res.json();
+			if (data.url) {
+				window.location.href = data.url;	 	
+			} else {
+				console.error(data);
+				alert('Checkout creation failed. See console for details.');
+			}
+		} catch (err) {
+			console.error(err);
+			alert('Checkout creation failed. See console for details.');
+		}
+	});
+    	
     // CRITICAL FIX: Implement forced wait until CLIENT_TABLES is loaded
 	(async function initializeMultiTenant() {
         // 1. Get TENANT_ID instantly
         const urlParams = new URLSearchParams(window.location.search);
         const TENANT_ID = urlParams.get('tenant_id') || 'R-RESTO-001'; 
-
+        
         // 2. Load config file synchronously (blocking execution until data is available)
         await loadClientConfig(TENANT_ID); 
 
@@ -730,21 +1159,29 @@
         };
 	})();
 
-    // 4. NEW SYNCHRONOUS FILE LOADER FUNCTION
+    // NEW SYNCHRONOUS FILE LOADER FUNCTION (Uses Fetch/Eval)
     function loadClientConfig(tenantId) {
         return new Promise(resolve => {
-            const script = document.createElement('script');
-            script.src = `/${tenantId}.js`; 
-            script.onload = () => {
-                // Config file successfully loaded and executed
-                resolve();
-            };
-            script.onerror = (e) => {
-                // If the file fails to load (404), resolve anyway to trigger the fallback layout
-                console.error(`Error loading client config for ${tenantId}.`);
-                resolve();
-            };
-            document.head.appendChild(script);
+            const configPath = `/${tenantId}.js`;
+            fetch(configPath)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to load config file: ${configPath}`);
+                    }
+                    return response.text();
+                })
+                .then(scriptText => {
+                    // CRITICAL FIX: Define window.CLIENT_TABLES in the global scope 
+                    window.CLIENT_TABLES = [];
+                    eval(scriptText); 
+                    resolve();
+                })
+                .catch(error => {
+                    console.error(`[CONFIG ERROR] Could not load ${configPath}. Reason:`, error.message);
+                    // Define empty array for graceful fallback
+                    window.CLIENT_TABLES = [];
+                    resolve(); 
+                });
         });
     }
 
