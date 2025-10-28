@@ -46,7 +46,7 @@ async function sendCustomerConflictAlert(booking, displayName) {
         <p>We are processing a full refund immediately. It may take 5-10 business days to appear on your statement.</p>
         
         <p>Please visit the map again right now to select a new available table:</p>
-        <p><a href="https://book.dineselect.co/pick-seat.html">Choose a New Table</a></p>
+        <p><a href="https://book.dineselect.co/select-table.html">Choose a New Table</a></p>
         
         <p>Thank you for your understanding. We hope to see you soon!</p>
     `;
