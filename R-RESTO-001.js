@@ -1,4 +1,4 @@
-// Unique table positions for R-RESTO-001
+// R-RESTO-001.js
 const CLIENT_TABLES = [
     { "id": 1, "x": 140, "y": 310, "w": 90, "h": 30, "rotation": 0 },
     { "id": 2, "x": 63, "y": 109, "w": 90, "h": 30, "rotation": 0 },
