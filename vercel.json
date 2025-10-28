@@ -25,9 +25,12 @@
   "rewrites": [
     { "source": "/admin-booking", "destination": "/api/admin-create-booking" },
     
+    { "source": "/select-table", "destination": "/pick-seat.html" },
+    
     { "source": "/pick-seat.html", "destination": "/pick-seat.html" },
     { "source": "/admin.html", "destination": "/admin.html" },
-    { "source": "/success.html", "destination": "/success.html" },
-    { "source": "/reports.html", "destination": "/reports.html" }
+    { "source": "/demo.html", "destination": "/demo.html" },
+    { "source": "/reports.html", "destination": "/reports.html" },
+    { "source": "/success.html", "destination": "/success.html" }
   ]
 }
