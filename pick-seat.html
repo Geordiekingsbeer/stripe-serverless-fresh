@@ -328,7 +328,7 @@
         document.head.appendChild(configScript);
         
         // Initialize CLIENT_TABLES in the global scope for safety
-        // NOTE: We now rely on the external script to define CLIENT_TABLES without 'var' or 'const'
+        // NOTE: We rely on the external script to define CLIENT_TABLES
     </script>
 
 </head>
@@ -430,12 +430,17 @@
     let CURRENT_PARTY_SIZE = 0;
     const FILTERED_COLOR = '#cccccc';
 
+	// Check if CLIENT_TABLES loaded, otherwise use an empty array (for the fallback logic below)
+	if (typeof CLIENT_TABLES === 'undefined') {
+		var CLIENT_TABLES = []; 
+	}
+
     function generateUniqueId() {
         return 'AUTO-' + Date.now().toString(36) + Math.random().toString(36).substring(2);
     }
 
     let URL_PARAMS = {
-        tenant_id: null, 
+        tenant_id: null, // Will be set by TENANT_ID from <head> script
         booking_ref: null,
         source: null,
         booking_date: null,
@@ -653,9 +658,9 @@
 
         // Use the CLIENT_TABLES variable loaded from the external script
         let tables = [];
+        // The check for CLIENT_TABLES is critical because the script loads asynchronously
         if (typeof CLIENT_TABLES !== 'undefined' && Array.isArray(CLIENT_TABLES) && CLIENT_TABLES.length > 0) {
              tables = CLIENT_TABLES;
-             console.log(`Loading client configuration from ${URL_PARAMS.tenant_id}.js`);
         } else {
              console.error("CLIENT_TABLES not found or failed to load. Using fallback layout.");
              // CRITICAL FALLBACK: Use your old hardcoded layout if the client file fails.
