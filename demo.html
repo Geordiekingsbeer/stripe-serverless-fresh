@@ -359,7 +359,7 @@
 		<div class="legend-item"><span class="legend-color" style="background-color: #b7d7a8;"></span>Premium Available</div>
 		<div class="legend-item"><span class="legend-color" style="background-color: #e0e0e0;"></span>Booked (Premium)</div>
 		<div class="legend-item"><span class="legend-color" style="background-color: #ffffff;"></span>Staff Use Only (N/A)</div>
-	</div>
+		</div>
 	
 	<button id="payBtn" class="green-action-btn" disabled>Pay for 0 Tables – Stripe (DEMO DISABLED)</button>
 
@@ -406,14 +406,6 @@
 	<script src="https://js.stripe.com/v3/ "></script>
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2 "></script>
 	<script src="https://unpkg.com/konva@9/konva.min.js "></script>
-	
-    <script>
-		const DEMO_ID = 'default_demo'; 
-		const script = document.createElement('script');
-		script.src = `/client_data/${DEMO_ID}.js`; 
-		document.head.appendChild(script);
-	</script>
-    
 	<script>
 // --- Wrap all logic in window.onload for absolute certainty that the image and container are ready ---
 window.onload = function() {
@@ -467,8 +459,10 @@ window.onload = function() {
         
     let CURRENT_PARTY_SIZE = 0;
     
+    // --- FIX: Change FILTERED_COLOR to match BOOKED_COLOR ---
     const BOOKED_COLOR = '#e0e0e0';
     const FILTERED_COLOR = BOOKED_COLOR; // Tables filtered by size will appear booked/unavailable
+    // --------------------------------------------------------
 
     function generateUniqueId() {
         return 'AUTO-' + Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -689,41 +683,29 @@ window.onload = function() {
     async function loadTables() {
         if (!URL_PARAMS.tenant_id) return false;	
 
-        // --- DYNAMIC/FALLBACK LOGIC START ---
-        let tables;
-
-        // Check if the external script loaded the variable CLIENT_TABLES
-        if (typeof CLIENT_TABLES !== 'undefined' && Array.isArray(CLIENT_TABLES)) {
-             // 1. Use data loaded from /client_data/default_demo.js
-             tables = CLIENT_TABLES;
-             console.log(`Loading layout from external file: /client_data/${DEMO_ID}.js`);
-        } else {
-             // 2. FALLBACK: Use the internal hardcoded array (as insurance)
-             console.error("CLIENT_TABLES not found or failed to load. Using internal fallback layout.");
-             tables = [
-                { "id": 1, "x": 140, "y": 310, "w": 90, "h": 30, "rotation": 0 },
-                { "id": 2, "x": 63, "y": 109, "w": 90, "h": 30, "rotation": 0 },
-                { "id": 3, "x": 401, "y": 176, "w": 30, "h": 30, "rotation": 90 },
-                { "id": 4, "x": 64, "y": 175, "w": 30, "h": 30, "rotation": 0 },
-                { "id": 5, "x": 391, "y": 330, "w": 50, "h": 30, "rotation": 90 },
-                { "id": 6, "x": 334, "y": 396, "w": 30, "h": 30, "rotation": 90 },
-                { "id": 7, "x": 65, "y": 243, "w": 50, "h": 30, "rotation": 180 },
-                { "id": 8, "x": 334, "y": 176, "w": 30, "h": 30, "rotation": 90 },
-                { "id": 9, "x": 333, "y": 321, "w": 30, "h": 50, "rotation": 0 },
-                { "id": 10, "x": 269, "y": 176, "w": 30, "h": 30, "rotation": 0 },
-                { "id": 11, "x": 195, "y": 108, "w": 30, "h": 30, "rotation": 90 },
-                { "id": 12, "x": 190, "y": 175, "w": 50, "h": 30, "rotation": 0 },
-                { "id": 13, "x": 161, "y": 242, "w": 30, "h": 30, "rotation": 0 },
-                { "id": 14, "x": 129, "y": 175, "w": 30, "h": 30, "rotation": 0 },
-                { "id": 18, "x": 66, "y": 310, "w": 30, "h": 30, "rotation": 0 },
-                { "id": 19, "x": 268, "y": 108, "w": 30, "h": 30, "rotation": 90 },
-                { "id": 20, "x": 400, "y": 396, "w": 30, "h": 30, "rotation": 90 },
-                { "id": 21, "x": 324, "y": 117, "w": 50, "h": 30, "rotation": 90 }
-            ];
-        }
-        
-        tables.sort((a, b) => a.id - b.id);
-        // --- DYNAMIC/FALLBACK LOGIC END ---
+        // --- FINAL FIXED LAYOUT COORDINATES ---
+        // These positions were manually set and saved by you in Admin Mode.
+        const tables = [
+            { "id": 1, "x": 140, "y": 310, "w": 90, "h": 30, "rotation": 0 },
+            { "id": 2, "x": 63, "y": 109, "w": 90, "h": 30, "rotation": 0 },
+            { "id": 3, "x": 401, "y": 176, "w": 30, "h": 30, "rotation": 90 },
+            { "id": 4, "x": 64, "y": 175, "w": 30, "h": 30, "rotation": 0 },
+            { "id": 5, "x": 391, "y": 330, "w": 50, "h": 30, "rotation": 90 },
+            { "id": 6, "x": 334, "y": 396, "w": 30, "h": 30, "rotation": 90 },
+            { "id": 7, "x": 65, "y": 243, "w": 50, "h": 30, "rotation": 180 },
+            { "id": 8, "x": 334, "y": 176, "w": 30, "h": 30, "rotation": 90 },
+            { "id": 9, "x": 333, "y": 321, "w": 30, "h": 50, "rotation": 0 },
+            { "id": 10, "x": 269, "y": 176, "w": 30, "h": 30, "rotation": 0 },
+            { "id": 11, "x": 195, "y": 108, "w": 30, "h": 30, "rotation": 90 },
+            { "id": 12, "x": 190, "y": 175, "w": 50, "h": 30, "rotation": 0 },
+            { "id": 13, "x": 161, "y": 242, "w": 30, "h": 30, "rotation": 0 },
+            { "id": 14, "x": 129, "y": 175, "w": 30, "h": 30, "rotation": 0 },
+            { "id": 18, "x": 66, "y": 310, "w": 30, "h": 30, "rotation": 0 },
+            { "id": 19, "x": 268, "y": 108, "w": 30, "h": 30, "rotation": 90 },
+            { "id": 20, "x": 400, "y": 396, "w": 30, "h": 30, "rotation": 90 },
+            { "id": 21, "x": 324, "y": 117, "w": 50, "h": 30, "rotation": 90 }
+        ].sort((a, b) => a.id - b.id);
+        // ------------------------------------------------------------------
         
         layer.destroyChildren();	
         tableDataMap = new Map();
