@@ -194,7 +194,7 @@ export default async (req, res) => {
             },
 
             success_url: `https://book.dineselect.co/success.html?session_id={CHECKOUT_SESSION_ID}&tenant_id=${tenant_id}&booking_ref=${booking_ref}`,
-            cancel_url: `https://book.dineselect.co/select-table.html?tenant_id=${tenant_id}&conflict=true`,    
+            cancel_url: `https://book.dineselect.co/pick-seat.html?tenant_id=${tenant_id}&conflict=true`,    
         });
 
         return res.status(200).json({ url: session.url });
