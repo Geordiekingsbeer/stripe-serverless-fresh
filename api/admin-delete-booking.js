@@ -50,18 +50,17 @@ export default async (req, res) => {
 };
 ```
 
-### 2. Fix 2: Admin Frontend Update (`admin.html`)
+## 🛠️ Fix 2: Admin Frontend Update (`admin.html`)
 
-This ensures your local Admin Page is calling the API correctly.
+You confirmed that the `deleteBooking` function in your local file needs to be updated. Since the server file was crashing, the client (Admin Page) never successfully received confirmation.
 
-Find the `async function deleteBooking(bookingId) { ... }` function (around **line 796** in your provided code) and **replace the entire function** with the secure version below.
+**Action:** Ensure your `deleteBooking` function in **`admin.html`** is correctly routing the request to the API (as defined in the previous step).
 
 ```javascript
 // admin.html (~line 796) - REPLACE ENTIRE deleteBooking FUNCTION
 
 async function deleteBooking(bookingId) {
-    const tenantId = CURRENT_TENANT_ID; // Use the stored tenant ID
-    // CRITICAL: URL for the secure deletion API (Match your actual Vercel domain)
+    const tenantId = CURRENT_TENANT_ID; 
     const deleteApiUrl = 'https://stripe-serverless-fresh.vercel.app/api/admin-delete-booking'; 
 
     const payload = {
@@ -86,7 +85,7 @@ async function deleteBooking(bookingId) {
 
         // SUCCESS: Reload the entire map data
         alert('Booking removed!');
-        await loadBookings(); // This fetches the new, updated list and refreshes the map
+        await loadBookings(); 
         return true; 
 
     } catch (error) {
