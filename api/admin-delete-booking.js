@@ -50,13 +50,11 @@ export default async (req, res) => {
 };
 ```
 
----
+### 2. Fix 2: Admin Frontend Update (`admin.html`)
 
-## 🛠️ Fix 2: Admin Frontend Update (`admin.html`)
+This ensures your local Admin Page is calling the API correctly.
 
-You also need to ensure your local Admin Page is calling the API correctly.
-
-Find the `async function deleteBooking(bookingId) { ... }` function in your **`admin.html`** file (around **line 796**) and **replace the entire function** with the secure version below.
+Find the `async function deleteBooking(bookingId) { ... }` function (around **line 796** in your provided code) and **replace the entire function** with the secure version below.
 
 ```javascript
 // admin.html (~line 796) - REPLACE ENTIRE deleteBooking FUNCTION
