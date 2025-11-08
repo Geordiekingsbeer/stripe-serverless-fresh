@@ -7,7 +7,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY); 
 
 export default async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allows all origins for Admin access
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -48,18 +48,21 @@ export default async (req, res) => {
 ```
 ***
 
-### 2. Update `admin.html` (Front-end Call)
+## 🛠️ Fix 2: Admin Frontend Update (`admin.html`)
 
-Now we change your Admin Page to call this new secure API instead of trying to delete the row directly from the browser.
+The second part is updating your local Admin Page to call this new secure API instead of trying to delete the row directly from the browser.
 
-Find the `async function deleteBooking(bookingId) { ... }` function (around **line 796**) and **replace the entire function** with this secure version.
+Find the `async function deleteBooking(bookingId) { ... }` function (around **line 796**) and **replace the entire function** with the secure version below.
+
+### Action: Replace `deleteBooking` in `admin.html`
 
 ```javascript
 // admin.html (~line 796) - REPLACE ENTIRE deleteBooking FUNCTION
 
 async function deleteBooking(bookingId) {
     const tenantId = CURRENT_TENANT_ID; // Use the stored tenant ID
-    const deleteApiUrl = 'https://stripe-serverless-fresh.vercel.app/api/admin-delete-booking'; // IMPORTANT: Match your actual Vercel domain structure
+    // CRITICAL: URL for the secure deletion API (Match your actual Vercel domain)
+    const deleteApiUrl = 'https://stripe-serverless-fresh.vercel.app/api/admin-delete-booking'; 
 
     const payload = {
         bookingId: bookingId,
@@ -73,17 +76,17 @@ async function deleteBooking(bookingId) {
             body: JSON.stringify(payload),
         });
 
-        const result = await response.json();
-
+        // The API returns non-200 status code if deletion fails (e.g., RLS error)
         if (!response.ok) {
-            alert('Admin deletion failed: ' + (result.error || 'Check Vercel logs for API error.'));
-            console.error('Admin Delete API Error:', result.error || result.details);
+            const errorResult = await response.json();
+            console.error('Admin Delete API Error:', errorResult.error || errorResult.details);
+            alert('Admin deletion failed: ' + (errorResult.error || 'Check browser console for details.'));
             return false;
         }
 
         // SUCCESS: Reload the entire map data
         alert('Booking removed!');
-        await loadBookings(); // This forces a data fetch and calls updateTableVisuals
+        await loadBookings(); // This fetches the new, updated list and refreshes the map
         return true; 
 
     } catch (error) {
