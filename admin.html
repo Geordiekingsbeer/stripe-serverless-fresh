@@ -856,6 +856,7 @@
 		}
 		
 		async function deleteBooking(bookingId) {
+    // CRITICAL: We need the ID of the specific row to delete.
     const { error } = await _supa
         .from('premium_slots')
         .delete()
@@ -863,6 +864,7 @@
         .eq('tenant_id', CURRENT_TENANT_ID);
     
     if (error) { 
+        console.error("Supabase Deletion Error:", error.message);
         alert('Deletion failed: ' + error.message); 
         return false; 
     } else { 
