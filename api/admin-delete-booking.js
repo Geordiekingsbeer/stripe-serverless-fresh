@@ -50,16 +50,50 @@ export default async (req, res) => {
 };
 ```
 
-### Action 2: Verify Admin Panel Client Code (No Change Needed)
+---
 
-The `deleteBooking` function in your **`admin.html`** file is already correctly set up to call the Vercel API endpoint. Once the Vercel file stops crashing, your Admin Panel will automatically succeed on deletion and refresh the map.
+## 🛠️ Fix 2: Admin Frontend Update (`admin.html`)
 
-**Verification of `deleteBooking` in `admin.html` (Current State - No Change Needed):**
+This ensures your local Admin Page is calling the API correctly.
+
+Find the `async function deleteBooking(bookingId) { ... }` function in your **`admin.html`** file (around **line 796**) and **replace the entire function** with the secure version below.
 
 ```javascript
-// admin.html (~line 796)
+// admin.html (~line 796) - REPLACE ENTIRE deleteBooking FUNCTION
+
 async function deleteBooking(bookingId) {
-    const tenantId = CURRENT_TENANT_ID; 
+    const tenantId = CURRENT_TENANT_ID; // Use the stored tenant ID
+    // CRITICAL: URL for the secure deletion API (Match your actual Vercel domain)
     const deleteApiUrl = 'https://stripe-serverless-fresh.vercel.app/api/admin-delete-booking'; 
-    // ... (rest of the API call logic)
+
+    const payload = {
+        bookingId: bookingId,
+        tenantId: tenantId
+    };
+
+    try {
+        const response = await fetch(deleteApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        // We check response.ok and process the JSON result
+        if (!response.ok) {
+            const errorResult = await response.json();
+            console.error('Admin Delete API Error:', errorResult.error || errorResult.details);
+            alert('Admin deletion failed: ' + (errorResult.error || 'Check browser console for details.'));
+            return false;
+        }
+
+        // SUCCESS: Reload the entire map data
+        alert('Booking removed!');
+        await loadBookings(); // This fetches the new, updated list and refreshes the map
+        return true; 
+
+    } catch (error) {
+        alert('Network Error: Could not reach the deletion service.');
+        console.error('Fetch Error:', error);
+        return false;
+    }
 }
