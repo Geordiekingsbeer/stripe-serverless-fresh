@@ -50,47 +50,16 @@ export default async (req, res) => {
 };
 ```
 
-## 🛠️ Fix 2: Admin Frontend Update (`admin.html`)
+### Action 2: Verify Admin Panel Client Code (No Change Needed)
 
-You confirmed that the `deleteBooking` function in your local file needs to be updated. Since the server file was crashing, the client (Admin Page) never successfully received confirmation.
+The `deleteBooking` function in your **`admin.html`** file is already correctly set up to call the Vercel API endpoint. Once the Vercel file stops crashing, your Admin Panel will automatically succeed on deletion and refresh the map.
 
-**Action:** Ensure your `deleteBooking` function in **`admin.html`** is correctly routing the request to the API (as defined in the previous step).
+**Verification of `deleteBooking` in `admin.html` (Current State - No Change Needed):**
 
 ```javascript
-// admin.html (~line 796) - REPLACE ENTIRE deleteBooking FUNCTION
-
+// admin.html (~line 796)
 async function deleteBooking(bookingId) {
     const tenantId = CURRENT_TENANT_ID; 
     const deleteApiUrl = 'https://stripe-serverless-fresh.vercel.app/api/admin-delete-booking'; 
-
-    const payload = {
-        bookingId: bookingId,
-        tenantId: tenantId
-    };
-
-    try {
-        const response = await fetch(deleteApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-
-        // We check response.ok and process the JSON result
-        if (!response.ok) {
-            const errorResult = await response.json();
-            console.error('Admin Delete API Error:', errorResult.error || errorResult.details);
-            alert('Admin deletion failed: ' + (errorResult.error || 'Check browser console for details.'));
-            return false;
-        }
-
-        // SUCCESS: Reload the entire map data
-        alert('Booking removed!');
-        await loadBookings(); 
-        return true; 
-
-    } catch (error) {
-        alert('Network Error: Could not reach the deletion service.');
-        console.error('Fetch Error:', error);
-        return false;
-    }
+    // ... (rest of the API call logic)
 }
