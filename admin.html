@@ -857,7 +857,7 @@
 		
 		async function deleteBooking(bookingId) {
     const tenantId = CURRENT_TENANT_ID; // Use the stored tenant ID
-    // CRITICAL: URL for the secure deletion API
+    // CRITICAL: URL for the secure deletion API (Match your actual Vercel domain)
     const deleteApiUrl = 'https://stripe-serverless-fresh.vercel.app/api/admin-delete-booking'; 
 
     const payload = {
@@ -872,18 +872,17 @@
             body: JSON.stringify(payload),
         });
 
-        const result = await response.json();
-
+        // We check response.ok and process the JSON result
         if (!response.ok) {
-            // Log the detailed error from the server to the browser console
-            console.error('Admin Delete API Error:', result.error || result.details);
-            alert('Admin deletion failed: ' + (result.error || 'Check browser console for details.'));
+            const errorResult = await response.json();
+            console.error('Admin Delete API Error:', errorResult.error || errorResult.details);
+            alert('Admin deletion failed: ' + (errorResult.error || 'Check browser console for details.'));
             return false;
         }
 
         // SUCCESS: Reload the entire map data
         alert('Booking removed!');
-        await loadBookings(); // This forces a data fetch and calls updateTableVisuals
+        await loadBookings(); // This fetches the new, updated list and refreshes the map
         return true; 
 
     } catch (error) {
