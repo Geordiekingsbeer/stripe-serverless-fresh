@@ -856,11 +856,22 @@
 		}
 		
 		async function deleteBooking(bookingId) {
-			const { error } = await _supa.from('premium_slots').delete().eq('id', bookingId).eq('tenant_id', CURRENT_TENANT_ID);
-			
-			if (error) { alert('Deletion failed: '+error.message); return false; }	
-			else { alert('Booking removed!'); await loadBookings(); return true; }
-		}
+    const { error } = await _supa
+        .from('premium_slots')
+        .delete()
+        .eq('id', bookingId) // Target the specific row ID for deletion
+        .eq('tenant_id', CURRENT_TENANT_ID);
+    
+    if (error) { 
+        alert('Deletion failed: ' + error.message); 
+        return false; 
+    } else { 
+        // SUCCESS: Reload the entire map data
+        alert('Booking removed!'); 
+        await loadBookings(); // This forces a data fetch and calls updateTableVisuals
+        return true; 
+    }
+}
 
 		function cleanNotes(notes) {
 			if (!notes) return 'None';
