@@ -7,7 +7,8 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY); 
 
 export default async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Allows all origins for Admin access
+    // CRITICAL: Allow CORS access from the front end
+    res.setHeader('Access-Control-Allow-Origin', '*'); 
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -20,6 +21,7 @@ export default async (req, res) => {
     }
 
     try {
+        // Data destructured from the front-end request body
         const { bookingId, tenantId } = req.body;
         
         if (!bookingId || !tenantId) {
@@ -35,6 +37,7 @@ export default async (req, res) => {
 
         if (error) {
             console.error('SERVER DELETE FAILED:', error);
+            // Include details in the response for debugging in the browser console
             return res.status(500).json({ error: 'Database delete failed.', details: error.message });
         }
 
@@ -46,15 +49,14 @@ export default async (req, res) => {
     }
 };
 ```
-***
+
+---
 
 ## 🛠️ Fix 2: Admin Frontend Update (`admin.html`)
 
-The second part is updating your local Admin Page to call this new secure API instead of trying to delete the row directly from the browser.
+You also need to ensure your local Admin Page is calling the API correctly.
 
-Find the `async function deleteBooking(bookingId) { ... }` function (around **line 796**) and **replace the entire function** with the secure version below.
-
-### Action: Replace `deleteBooking` in `admin.html`
+Find the `async function deleteBooking(bookingId) { ... }` function in your **`admin.html`** file (around **line 796**) and **replace the entire function** with the secure version below.
 
 ```javascript
 // admin.html (~line 796) - REPLACE ENTIRE deleteBooking FUNCTION
@@ -76,7 +78,7 @@ async function deleteBooking(bookingId) {
             body: JSON.stringify(payload),
         });
 
-        // The API returns non-200 status code if deletion fails (e.g., RLS error)
+        // We check response.ok and process the JSON result
         if (!response.ok) {
             const errorResult = await response.json();
             console.error('Admin Delete API Error:', errorResult.error || errorResult.details);
