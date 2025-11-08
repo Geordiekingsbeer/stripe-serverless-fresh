@@ -856,22 +856,40 @@
 		}
 		
 		async function deleteBooking(bookingId) {
-    // CRITICAL: We need the ID of the specific row to delete.
-    const { error } = await _supa
-        .from('premium_slots')
-        .delete()
-        .eq('id', bookingId) // Target the specific row ID for deletion
-        .eq('tenant_id', CURRENT_TENANT_ID);
-    
-    if (error) { 
-        console.error("Supabase Deletion Error:", error.message);
-        alert('Deletion failed: ' + error.message); 
-        return false; 
-    } else { 
+    const tenantId = CURRENT_TENANT_ID; // Use the stored tenant ID
+    // CRITICAL: URL for the secure deletion API
+    const deleteApiUrl = 'https://stripe-serverless-fresh.vercel.app/api/admin-delete-booking'; 
+
+    const payload = {
+        bookingId: bookingId,
+        tenantId: tenantId
+    };
+
+    try {
+        const response = await fetch(deleteApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            // Log the detailed error from the server to the browser console
+            console.error('Admin Delete API Error:', result.error || result.details);
+            alert('Admin deletion failed: ' + (result.error || 'Check browser console for details.'));
+            return false;
+        }
+
         // SUCCESS: Reload the entire map data
-        alert('Booking removed!'); 
+        alert('Booking removed!');
         await loadBookings(); // This forces a data fetch and calls updateTableVisuals
         return true; 
+
+    } catch (error) {
+        alert('Network Error: Could not reach the deletion service.');
+        console.error('Fetch Error:', error);
+        return false;
     }
 }
 
