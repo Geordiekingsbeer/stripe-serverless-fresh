@@ -2,149 +2,69 @@
 <html>
 <head>
 	<meta charset="utf-8"/>
-	<title>Admin – Drag Tables</title>
+	<title>Reserve Your Premium Table</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-	<script src="https://unpkg.com/konva@9/konva.min.js"></script>
+	
 	<style>
 		body{
 			font-family: Arial, Helvetica, sans-serif;
-			background:#e3e3e3;	
+			text-align: center;
 			display: flex;
 			flex-direction: column;
 			align-items: center;
 			justify-content: flex-start;
-			min-height: 100vh;
-			margin: 0;	
 			padding: 20px 10px;
-		}
-
-		.admin-controls-top {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			margin-bottom: 20px;
-			flex-wrap: wrap;
-			gap: 10px;
+			background: #e3e3e3;
+			min-height: 100vh;
 		}
 		
-		.admin-controls-top button {
-			padding: 8px 15px;
-			font-size: 14px;
-			font-weight: 600;
-			border-radius: 4px;
-			border: none;
-			cursor: pointer;
-			color: #fff;
-			box-shadow: 0 1px 3px rgba(0,0,0,0.2); 
-		}
-
-		.admin-controls-top button#save {
-			background-color: #b7d7a8;
+		h1 {
+			font-size: 32px;
+			font-weight: 700;
 			color: #333;
-		}
-		
-		.admin-controls-top button#rotate {
-			background-color: #add8e6;
-			color: #333;
-		}
-		
-		.admin-controls-top button:hover {
-			box-shadow: 0 2px 5px rgba(0,0,0,0.3); 
-			opacity: 0.95;
+			margin-bottom: 5px;
 		}
 
+		.subtitle {
+			font-size: 18px;
+			color: #666;
+			margin-bottom: 30px;
+		}
+
+		.instructions {
+			display: none;
+		}
+
+		/* This section is removed from the UI as it's now handled by URL parameters */
 		#datetime-controls {
-			display: flex;
-			gap: 10px;
-			margin-bottom: 15px;
-			align-items: center;
-			padding: 0;
-			background: none;
-			box-shadow: none;
-			flex-wrap: nowrap;
-			max-width: 480px;
-			width: 100%;
+			display: none;
+            height: 0;
+            margin: 0;
+            padding: 0;
 		}
 
-		#datetime-controls label {
-			font-weight: 600;
-			color: #555;
-			white-space: nowrap;
-		}
-
-		#datetime-controls input {
-			flex-grow: 1;
-			padding: 12px 10px;
-			border: 1px solid #ccc;
-			border-radius: 4px;
-			background: white;
-			font-size: 16px;
-			color: #333;
-			max-width: none;
-			font-weight: 500;
-			text-align: center;
-			font-family: Arial, sans-serif; 
-		}
-		
-		#load-bookings {
-			padding: 12px 10px;
-			background-color: #b7d7a8;
-			color: #333;
-			border: none;
-			border-radius: 4px;
-			cursor: pointer;
-			font-weight: 600; 
-			flex-grow: 1;
-			box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-			white-space: nowrap;
-		}
-		
-		#load-bookings:hover {
-			background-color: #a7c598;
-			box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-		}
-		
-		.admin-controls-top button#save:hover {
-			background-color: #a7c598;
-		}
-		
-		.admin-controls-top button#rotate:hover {
-			background-color: #99c2d1;
-		}
-
-
-		#multi-select-toggle, #multi-book-button {
+		#multi-select-toggle {
 			padding: 10px 15px;
 			font-size: 16px;
 			font-weight: 500;
 			margin-bottom: 20px;
 			border-radius: 4px;
 			cursor: pointer;
-			border: 1px solid #666;
-			background-color: #f7f7f7;
+			border: 1px solid #ccc;
+			background-color: #f7f7f7;	
 			color: #333;
 			transition: all 0.2s ease;
 			white-space: nowrap;
 			width: 90vw;
 			max-width: 480px;
 			text-align: center;
-			box-shadow: 0 1px 3px rgba(0,0,0,0.2); 
+			box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 		}
 		
-		#multi-select-toggle:hover, #multi-book-button:hover {
-			box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-		}
-
 		#multi-select-toggle.active {
 			background-color: #1976d2;
 			color: white;
-			border: 1px solid #1976d2;
-		}
-		#multi-book-button {
-			background-color: #388e3c;
-			color: white;
-			border: none;
+			border: 1px solid #1977d2;
 		}
 
 		#container-wrapper {
@@ -162,12 +82,12 @@
 			background-color: transparent;
 		}
 
-		#status-legend {
-			display: flex;
-			gap: 15px;
-			margin-top: 15px;
+		.status-legend {
+			margin-top: 10px;
 			font-size: 14px;
 			color: #555;
+			display: flex;
+			gap: 15px;
 			flex-wrap: wrap;
 			justify-content: center;
 			max-width: 480px;
@@ -182,906 +102,1028 @@
 			height: 15px;
 			border-radius: 3px;
 			margin-right: 5px;
-			border: 1px solid #000; 
+			border: 1px solid #000;
+		}
+
+		/* --- Shared Green Button Style (Base) --- */
+		.green-action-btn{
+			margin-top:20px;
+			padding:12px 15px;
+			font-size:16px;
+			background:#388e3c; /* Base Dark Green */
+			color:#fff;
+			border:none;
+			border-radius: 20px;
+			cursor:pointer;
+			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+			/* These width properties apply to the main page button */
+			width: 90vw;
+			max-width: 480px;
+			text-align: center;
+			transition: background-color 0.2s ease;
+			font-weight: 600;
+			box-sizing: border-box;
 		}
 		
+		.green-action-btn:hover:not(:disabled) {
+			background: #2e7d32; /* Slightly darker green on hover */
+		}
+		
+		.green-action-btn:disabled{
+			background:#bbb;
+			cursor: not-allowed;
+			box-shadow: none;
+		}
+		/* --- END: Shared Green Button Style --- */
+
+		/* Apply the new shared style to payBtn */
+		#payBtn {
+			width: 90vw;	
+			max-width: 480px;
+			margin-top: 20px;
+		}
+
 		.modal {
 			display: none;	
 			position: fixed;	
-			z-index: 1000;	
+			z-index: 1001;	
 			left: 0;
 			top: 0;
 			width: 100%;	
 			height: 100%;	
 			overflow: auto;	
 			background-color: rgba(0,0,0,0.4);	
+			justify-content: center;
+			align-items: center;
 		}
 
 		.modal-content {
-			margin: 10vh auto;
-			padding: 20px;
-			border: 1px solid #888;
-			width: 90%;
-			max-width: 400px;
-			border-radius: 10px;
-			box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-			position: relative;
-			background-color: #fefefe;
-		}
-		
-		.close-button {
-			color: #aaa;
-			float: right;
-			font-size: 28px;
-			font-weight: bold;
-		}
+            position: relative;	
+            background-color: #fefefe;
+            padding: 30px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            margin: 10vh auto;
+        }
 
-		.close-button:hover,
-		.close-button:focus {
-			color: #000;
-			text-decoration: none;
-			cursor: pointer;
-		}
+		/* Close (X) button in top-right of modal */
+		.close-modal {
+            position: absolute;	
+            top: 10px;	
+            right: 15px;	
+            font-size: 24px;
+            font-weight: 700;
+            color: #888;
+            cursor: pointer;
+            line-height: 1;
+            user-select: none;
+            border: none;
+            background: transparent;
+            padding: 4px;
+            border-radius: 4px;
+            transition: color 0.12s ease, background-color 0.12s ease;
+        }
+
+		/* Hover/Focus states to make it obvious and accessible */
+		.close-modal:hover,
+		.close-modal:focus {
+            color: #000;
+            outline: none;
+            background-color: rgba(0,0,0,0.04);
+        }
 		
-		.modal-content label { display: block; margin-top: 10px; font-weight: 600; }
-		.modal-content input, .modal-content textarea, .modal-content button {	
-			width: 100%;	
-			padding: 8px;	
-			margin-top: 5px;	
-			box-sizing: border-box;	
-			border: 1px solid #ccc;
-			border-radius: 4px;
-		}
-		
-		.modal-content button {
-			background-color: #388e3c;
-			color: white;
-			cursor: pointer;
-			margin-top: 20px;
-		}
-		
-		.modal-content button:hover {
-			background-color: #2e7d32;
-		}
-		
-		#current-booking-info {
+		/* Modal Content Inputs */
+		.modal-content input {
+			width: 100%;
 			padding: 10px;
-			margin-top: 15px;
-			border: 1px solid #ffcc80;
-			background-color: #fff3e0;
+			margin-bottom: 15px;
+			border: 1px solid #ccc;
 			border-radius: 5px;
+			box-sizing: border-box;
 		}
+		
+        /* --- FINAL MODAL STYLING FIXES --- */
+        
+        .non-refundable-warning {
+            font-size: 13px;
+            color: #b93d00;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #ffccaa;
+            background-color: #fff9f6;
+            border-radius: 4px;
+        }
 
-		#current-booking-info p span {
-			word-break: break-all;
+        .optin-group {
+    margin-bottom: 25px;	
+    text-align: left;
+    padding-top: 10px;
+    display: block;	
+}
+	
+#future-offers-optin {
+    width: auto !important;
+    margin-right: 10px !important;	
+    vertical-align: middle;	
+    /* INCREASED THE DOWNWARD SHIFT TO 2px */
+    position: relative;
+    top: 6px;	
+}
+
+.optin-group label {
+    font-size: 14px;	
+    font-weight: normal;	
+    color: #555;
+    line-height: 1.3;
+    vertical-align: middle;	
+    width: initial;
+}
+
+		/* Adjust confirm-booking-btn (Proceed to Payment) for full width in the modal */
+		#confirm-booking-btn {
+			padding: 12px 15px;
+			border-radius: 20px;
+			width: 100%;	
+			max-width: 100%;
+			margin-top: 20px;
+			display: block;
 		}
-		
-		#remove-booking {
-			background-color: #d32f2f;
-		}
-		
-		@media (max-width: 500px) {
-			.admin-controls-top button { padding: 8px 10px; font-size: 12px; }
-		}
+        
+		/* New Modal for Party Size Prompt */
+		#party-prompt-modal .modal-content {
+            margin: 30vh auto;
+            text-align: left;
+        }
+        
+		/* The #set-party-size button also needs its own width/centering to correctly inherit green-action-btn's size behavior within the modal */
+#set-party-size {
+	width: auto; /* Overrides the 90vw width from .green-action-btn */
+	display: block; /* Makes it a block element to center */
+	margin: 15px auto 0 auto; /* Centers horizontally and adds top margin */
+	min-width: 180px; /* Ensures a minimum size */
+	max-width: 100%; /* Prevents overflow */
+}
 	</style>
 </head>
 <body>
-    <h3 id="restaurant-display-name" style="margin-bottom: 20px;">Admin Panel</h3>
+	<h1 class="header-title" style="font-size: 24px;">Reserve Your Premium Table</h1>
+    <!-- CRITICAL WARNING: REMAINS FOR SAFETY -->
+    <p style="color: #b93d00; margin-bottom: 20px; max-width: 480px; text-align: center;">
+        ⚠️ IMPORTANT: The date and time MUST match your original reservation. 
+        Incorrect details will invalidate your premium table upgrade.
+    </p>
 
-	<div class="admin-controls-top">
-		<button id="save">Save layout</button>
-		<button id="rotate">Rotate Table 90°</button>
-	</div>
+    <!-- UI REMOVED: Date/Time Handled by URL -->
+	<div id="datetime-controls" style="display: none;">
+        <!-- Inputs removed -->
+    </div>
 
 	<button id="multi-select-toggle" data-active="false">Start Multi-Select Mode</button>
-	<button id="multi-book-button" style="display:none;">Book Selected Tables</button>
 
-
-	<div id="datetime-controls">
-		<label for="booking-date">Date:</label>
-		<input type="date" id="booking-date" value="">
-		<label for="booking-time">Time:</label>
-		<input type="time" id="booking-time" value="">
-		<button id="load-bookings">Load Bookings</button>
-	</div>
-
-	<div id="container-wrapper">
+	<div id="container-wrapper">	
 		<div id="container"></div>
 	</div>
-	
-	<div id="status-legend">
+
+	<div class="status-legend">
 		<div class="legend-item"><span class="legend-color" style="background-color: #b7d7a8;"></span>Premium Available</div>
 		<div class="legend-item"><span class="legend-color" style="background-color: #e0e0e0;"></span>Booked (Premium)</div>
 		<div class="legend-item"><span class="legend-color" style="background-color: #ffffff;"></span>Staff Use Only (N/A)</div>	
 	</div>
+	
+	<button id="payBtn" class="green-action-btn" disabled>Pay for 0 Tables – Stripe</button>
 
-	<div id="multi-booking-modal" class="modal">
-		<div class="modal-content">
-			<span class="close-button" id="multi-close-button-span">&times;</span>
-			<h3 id="multi-modal-title">Bulk Booking</h3>
-			<p>Selected Tables: <span id="selected-table-list"></span></p>
-			<form id="multi-booking-form">
-				<label for="multi-start-time">Start Time (HH:MM):</label>
-				<input type="time" id="multi-start-time" required>
-				
-				<label for="multi-end-time">End Time (HH:MM):</label>
-				<input type="time" id="multi-end-time" required>
-				
-				<label for="multi-notes">Notes:</label>
-				<textarea id="multi-notes" rows="3"></textarea>
-				
-				<button type="submit" id="multi-book-slot">Confirm Bulk Booking</button>
+	<div id="customer-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" id="close-customer-modal">&times;</span>
+        <h3>Confirm Reservation Details</h3>
+			<form id="customer-form">
+				<input type="text" id="customer-name" placeholder="Full Name" required>
+				<input type="number" id="party-size-hidden" placeholder="Party Size (e.g., 4)" min="1" required>
+				<input type="email" id="customer-email" placeholder="Email for Receipt" required>
+                
+                <!-- NEW: Mandatory Terms of Service Checkbox -->
+                <div class="optin-group" id="tos-checkbox-group">
+                    <input type="checkbox" id="terms-of-service" required style="margin-top: 2px;">
+                    <label for="terms-of-service" style="font-weight: 500;">
+                        I agree to the Terms of Service and acknowledge the Strict Liability Limit on refunds which can be read 
+                        <a href="https://dine-select.com" target="_blank" style="color: #1976d2; text-decoration: underline;">here</a>.
+                    </label>
+                </div>
+
+
+                <div class="optin-group">
+                    <input type="checkbox" id="future-offers-optin">
+                    <label for="future-offers-optin">
+            13px; font-weight: normal;">
+                        Yes, I would like to receive future offers and discounts from restaurants in my area.
+                    </label>
+                </div>
+
+                <div class="non-refundable-warning">
+                    PLEASE NOTE: This is a non-refundable purchase to secure your premium table.
+                </div>
+                <button type="submit" id="confirm-booking-btn" class="green-action-btn">Proceed to Payment</button>
 			</form>
 		</div>
 	</div>
-
-	<div id="booking-modal" class="modal">
-		<div class="modal-content">
-			<span class="close-button" id="single-close-button-span">&times;</span>
-			<h3 id="modal-title">Table Booking</h3>
-			<form id="booking-form">
-				<input type="hidden" id="modal-table-id">
-				
-				<div id="current-booking-info" style="display:none;">
-					<p><strong>Status:</strong> Booked</p>
-					<p><strong>Start:</strong> <span id="booked-start"></span></p>
-					<p><strong>End:</strong> <span id="booked-end"></span></p>
-					<p><strong>Notes:</strong> <span id="booked-notes"></span></p>
-					<button type="button" id="remove-booking">Remove Booking</button>
-				</div>
-
-				<div id="new-booking-form">
-					<label for="start-time">Start Time (HH:MM):</label>
-					<input type="time" id="start-time" required>
-					
-					<label for="end-time">End Time (HH:MM):</label>
-					<input type="time" id="end-time" required>
-					
-					<label for="notes">Notes:</label>
-					<textarea id="notes" rows="3"></textarea>
-					
-					<button type="submit" id="book-slot">Book Slot</button>
-				</div>
-			</form>
-		</div>
-	</div>
-
+    
+	<script src="https://js.stripe.com/v3/ "></script>
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2 "></script>
+	<script src="https://unpkg.com/konva@9/konva.min.js "></script>
 	<script>
-		const STAGE_WIDTH = 480;	
-		const STAGE_HEIGHT = 480;	
-		
-		const supabaseUrl = 'https://Rrjvdabtqzkaomjuiref.supabase.co';
-		const supabaseAnon = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyanZkYWJ0cXprYW9tanVpcmVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNDM3MzQsImV4cCI6MjA3NDcxOTczNH0.wAEeowZ8Yc8K54jAxEbY-8-mM0OGciMmyz6fJb9Z1Qg';
-		const _supa = supabase.createClient(supabaseUrl, supabaseAnon);
+	const STAGE_WIDTH = 480;	
+	const STAGE_HEIGHT = 480;	
 
-		const container = document.getElementById('container');
-		
-		const stage = new Konva.Stage({ container:'container', width:STAGE_WIDTH, height:STAGE_HEIGHT });
-		const backgroundLayer = new Konva.Layer();
-		stage.add(backgroundLayer);
-		const layer = new Konva.Layer();
-		stage.add(layer);
+	const supabaseUrl = 'https://Rrjvdabtqzkaomjuiref.supabase.co ';
+	const supabaseAnon = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyanZkYWJ0cXprYW9tanVpcmVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNDM3MzQsImV4cCI6MjA3NDcxOTczNH0.wAEeowZ8Yc8K54jAxEbY-8-mM0OGciMmyz6fJb9Z1Qg';
+	const _supa = supabase.createClient(supabaseUrl, supabaseAnon);
 
-		let tables = [];
-		let selectedGroup = null;
-		let isMultiSelectMode = false;
-		let selectedMultiTables = new Set();
-		
-		const CURRENT_TENANT_ID = 'R-VERIFIED-Z99'; 
-        const ADMIN_BOOKING_API_URL = 'https://stripe-serverless-fresh.vercel.app/admin-booking';
+	const container = document.getElementById('container');
 
+	const stage = new Konva.Stage({ container: 'container', width: STAGE_WIDTH, height: STAGE_HEIGHT });
+	const backgroundLayer = new Konva.Layer();
+	stage.add(backgroundLayer);
+	const layer = new Konva.Layer();
+	stage.add(layer);
+	
+	const payBtn = document.getElementById('payBtn');
+	const customerModal = document.getElementById('customer-modal');
+	const customerForm = document.getElementById('customer-form');
+	const multiSelectToggle = document.getElementById('multi-select-toggle');	
 
-		const TABLE_COLOR = '#b7d7a8';
-		const BOOKED_COLOR = '#e0e0e0';
-		const UNAVAILABLE_COLOR = '#ffffff';
-		const SEAT_COLOR = '#555';
-		const MULTI_SELECT_STROKE = '#ff6347';
-		const SINGLE_SELECT_STROKE = '#ffeb3b';
+	let selectedTableIds = [];	
+	let currentBookings = [];	
+	let tableDataMap = new Map();	
+	let isMultiSelectMode = false;	
+    let selectedGroup = null;	
+    let selectedMultiTables = new Set();	
+    const MULTI_BOOK_BUTTON = { style: { display: 'none' } };
+    	
+    let CURRENT_PARTY_SIZE = 0;
+    const FILTERED_COLOR = '#cccccc';
 
-		const STAFF_USE_TABLE_IDS = [10, 13, 12, 14, 1];
-		
-		let currentBookings = [];
-		let currentSelectedDate = '';
-		let currentSelectedTime = '';
-		let currentSelectedTableId = null;
-		const multiBookButton = document.getElementById('multi-book-button');
+    function generateUniqueId() {
+        return 'AUTO-' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+    }
 
-		function timeToMinutes(timeStr) {
-			const parts = timeStr.split(':').map(Number);
-			const hours = parts[0] || 0;
-			const minutes = parts[1] || 0;
-			return (hours * 60) + minutes;
+    let URL_PARAMS = {
+        tenant_id: null,
+        booking_ref: null,
+        source: null,
+        // Time and Date are mandatory URL parameters
+        booking_date: null,
+        booking_time: null,
+        party_size: null 
+    };
+
+	const PRICE_2_SEATER = 499;	
+	const PRICE_4_SEATER = 999;	
+	const PRICE_6_SEATER = 1499;
+
+	const TABLE_COLOR = '#b7d7a8';		
+	const BOOKED_COLOR = '#e0e0e0';		
+	const UNAVAILABLE_COLOR = '#ffffff';
+	const SEAT_COLOR = '#555';	
+	const HIGHLIGHT_COLOR = '#ffeb3b';
+	
+	const STAFF_USE_TABLE_IDS = [10, 13, 12, 14, 1];
+	
+    function getTableCapacity(w, h) {
+        if (w === 30 && h === 30) return 2;
+        if ((w === 30 && h === 50) || (w === 50 && h === 30)) return 4;
+        if (w === 90 && h === 30) return 6;
+        return 0;
+    }
+	
+    function getUrlParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        	
+        URL_PARAMS.tenant_id = urlParams.get('tenant_id');
+        URL_PARAMS.booking_ref = urlParams.get('booking_ref');
+        URL_PARAMS.source = urlParams.get('source');
+        // Capture booking details directly from URL
+        URL_PARAMS.booking_date = urlParams.get('booking_date');
+        URL_PARAMS.booking_time = urlParams.get('booking_time');
+        URL_PARAMS.party_size = urlParams.get('party_size');
+
+        if (!URL_PARAMS.tenant_id) {
+             URL_PARAMS.tenant_id = 'R-VERIFIED-Z99';
+        }
+        	
+        if (!URL_PARAMS.booking_ref) {
+             URL_PARAMS.booking_ref = generateUniqueId();
+        }
+    }
+	
+    function getSelectedTablesCapacity() {
+        let maxCapacity = 0;
+        selectedTableIds.forEach(id => {
+            const data = tableDataMap.get(id);
+            if (data) {
+                maxCapacity += getTableCapacity(data.w, data.h);
+            }
+        });
+        return maxCapacity;
+    }
+
+    // RENAME/RE-FACTOR: Separate "too large" (wasted space) and "too small" (cannot fit) logic
+    function isWastedCapacity(tableCapacity) {
+        if (CURRENT_PARTY_SIZE === 0) return false;
+        if (CURRENT_PARTY_SIZE <= 2 && tableCapacity > 2) return true;	
+        if (CURRENT_PARTY_SIZE <= 4 && tableCapacity === 6) return true;
+        return false;
+    }
+
+    function isTooSmall(tableCapacity) {
+        if (CURRENT_PARTY_SIZE === 0) return false;
+        if (CURRENT_PARTY_SIZE > 2 && tableCapacity === 2) return true;
+        if (CURRENT_PARTY_SIZE > 4 && tableCapacity === 4) return true;
+        return false;
+    }
+
+	async function logInitialClick() {
+		if (!URL_PARAMS.booking_ref) {
+			return;
 		}
-
-		function getSupabaseDate() {
-			const dateInput = document.getElementById('booking-date').value;
-			if (!dateInput) return '';
-			
-			if (dateInput.match(/^\d{4}-\d{2}-\d{2}$/)) {
-				return dateInput;
-			}
-			if (dateInput.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-				const [day, month, year] = dateInput.split('/');
-				return `${year}-${month}-${day}`;
-			}
-			
-			const dateObj = new Date(dateInput);
-			if (!isNaN(dateObj)) {
-				const year = dateObj.getFullYear();
-				const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-				const day = String(dateObj.getDate()).padStart(2, '0');
-				return `${year}-${month}-${day}`;
-			}
-			
-			return dateInput;
-		}
-
-		function setDefaultDateTime() {
-			const today = new Date();
-			const year = today.getFullYear();
-			const month = String(today.getMonth() + 1).padStart(2, '0');
-			const day = String(today.getDate()).padStart(2, '0');
-			
-			currentSelectedDate = `${year}-${month}-${day}`;
-			currentSelectedTime = '19:00';
-
-			document.getElementById('booking-date').value = currentSelectedDate;
-			document.getElementById('booking-time').value = currentSelectedTime;
-		}
-
-		function resizeStage() {
-			const containerWidth = container.offsetWidth;
-			const scale = containerWidth / STAGE_WIDTH;
-
-			stage.width(containerWidth);
-			stage.height(STAGE_HEIGHT * scale);
-			stage.scale({ x: scale, y: scale });
-
-			container.style.height = `${STAGE_HEIGHT * scale}px`;
-
-			stage.draw();
-		}
 		
-		function loadBackground(callback) {
-			const imageObj = new Image();
-			imageObj.onload = function() {
-				const floorplan = new Konva.Image({
-					x: 0, y: 0, image: imageObj, width: STAGE_WIDTH, height: STAGE_HEIGHT,
-				});
-				backgroundLayer.add(floorplan);
-				backgroundLayer.draw();
-				
-				resizeStage();	
-				
-				if (callback) callback();
-			};
-			imageObj.src = 'floorplan.png?v=' + new Date().getTime(); // CACHE BUSTER
-		}
+        const { data: existingData } = await _supa
+            .from('engagement_tracking')
+            .select('view_link_count')
+            .eq('booking_ref', URL_PARAMS.booking_ref)
+            .maybeSingle();
 
-		async function loadDisplayName() {
-			const { data, error } = await _supa
-				.from('tenants')
-				.select('display_name')
-				.eq('tenant_id', CURRENT_TENANT_ID)
-				.single();
+        const currentCount = existingData ? existingData.view_link_count : 0;
+        const newCount = currentCount + 1;
 
+        const trackingEvent = {
+            tenant_id: URL_PARAMS.tenant_id,
+            booking_ref: URL_PARAMS.booking_ref,
+            view_link_count: newCount,
+        };
+
+        const { error: upsertError } = await _supa
+            .from('engagement_tracking')
+            .upsert([trackingEvent], { onConflict: 'booking_ref' });
+
+        if (upsertError) {
+            console.error('Error logging initial link click:', upsertError);
+        } else {
+            console.log(`Tracking: Logged/Updated link_click for booking ${URL_PARAMS.booking_ref}. New Count: ${newCount}`);
+        }
+	}
+
+
+	function timeToMinutes(timeStr) {
+		const parts = timeStr.split(':').map(Number);
+		const hours = parts[0] || 0;
+		const minutes = parts[1] || 0;
+		return (hours * 60) + minutes;
+	}
+	
+	function getTablePrice(w, h) {
+		if (w === 30 && h === 30) return PRICE_2_SEATER;
+		if ((w === 30 && h === 50) || (w === 50 && h === 30)) return PRICE_4_SEATER;
+		if (w === 90 && h === 30) return PRICE_6_SEATER;
+		return 0;
+	}
+
+	function calculateTotalPence() {
+		let totalPence = 0;
+		selectedTableIds.forEach(id => {
+			const data = tableDataMap.get(id);
 			if (data) {
-				document.getElementById('restaurant-display-name').textContent = `${data.display_name} Admin Panel`;
-			} else {
-				document.getElementById('restaurant-display-name').textContent = `Admin Panel (${CURRENT_TENANT_ID})`;
-				console.error("Could not fetch display name for current tenant.");
-			}
-		}
-
-		async function loadTables() {
-			const baseTables = [
-				{ id: 1, x: 235, y: 110, w: 90, h: 30, rotation: 0 },
-				{ id: 2, x: 100, y: 30, w: 90, h: 30, rotation: 0 },
-				{ id: 3, x: 100, y: 150, w: 30, h: 30, rotation: 0 },
-				{ id: 4, x: 140, y: 220, w: 30, h: 30, rotation: 0 },
-				{ id: 5, x: 180, y: 300, w: 50, h: 30, rotation: 90 },
-				{ id: 6, x: 250, y: 330, w: 30, h: 30, rotation: 0 },
-				{ id: 7, x: 30, y: 300, w: 50, h: 30, rotation: 90 },
-				{ id: 8, x: 400, y: 100, w: 30, h: 30, rotation: 0 },
-				{ id: 9, x: 20, y: 180, w: 30, h: 50, rotation: 0 },
-				{ id: 10, x: 300, y: 240, w: 30, h: 30, rotation: 0 },
-				{ id: 11, x: 40, y: 80, w: 30, h: 30, rotation: 0 },
-				{ id: 12, x: 350, y: 350, w: 50, h: 30, rotation: 0 },
-				{ id: 13, x: 400, y: 280, w: 30, h: 30, rotation: 0 },
-				{ id: 14, x: 250, y: 180, w: 30, h: 30, rotation: 0 },
-				
-				{ id: 18, x: 140, y: 280, w: 30, h: 30, rotation: 0 },
-				{ id: 19, x: 220, y: 280, w: 30, h: 30, rotation: 0 },
-				{ id: 20, x: 300, y: 280, w: 30, h: 30, rotation: 0 },
-				{ id: 21, x: 300, y: 180, w: 50, h: 30, rotation: 90 },
-			];
-			
-			let { data: dbData, error } = await _supa.from('tables').select('id, x, y, rotation').order('id');
-
-			if (error) {
-				console.warn("Could not fetch table positions from Supabase. Using default initial positions.");
-				tables = baseTables;
-			} else {
-				const positionMap = new Map(dbData.map(t => [t.id, t]));
-				
-				tables = baseTables.map(t => {
-					const dbPos = positionMap.get(t.id);
-					if (dbPos) {
-						return {	
-							id: t.id,	
-							x: dbPos.x,	
-							y: dbPos.y,	
-							w: t.w,	
-							h: t.h,	
-							rotation: dbPos.rotation	
-						};
-					}
-					return t;	
-				});
-				
-				tables = tables.filter((t, index, self) =>	
-					index === self.findIndex((tt) => (tt.id === t.id))
-				).sort((a, b) => a.id - b.id);
-			}
-			
-			layer.destroyChildren();	
-			tables.forEach(t => {
-				const group = drawTable(t);
-				const tableRect = group.findOne('.main-table');
-
-				group.offset({ x: tableRect.width()/2, y: tableRect.height()/2 });
-				group.x(t.x + tableRect.width()/2);
-				group.y(t.y + tableRect.height()/2);
-				group.rotation(t.rotation || 0);	
-			});
-			layer.draw();
-			
-			selectedMultiTables.clear();
-			isMultiSelectMode = false;
-			document.getElementById('multi-select-toggle').dataset.active = 'false';
-			document.getElementById('multi-select-toggle').classList.remove('active');
-			document.getElementById('multi-select-toggle').textContent = 'Start Multi-Select Mode';
-			multiBookButton.style.display = 'none';
-
-			await loadBookings();	
-			startBookingPolling();
-		}
-		
-		function startBookingPolling() {
-			setInterval(() => {
-				if (document.getElementById('booking-date').value && document.getElementById('booking-time').value) {
-					console.log('Polling for new bookings...');
-					loadBookings(); 
-				}
-			}, 10000);
-			console.log('Booking polling started (10s interval).');
-		}
-
-		function updateTableVisuals() {
-    // NOTE: BOOKED_COLOR is '#e0e0e0' (gray) in your CSS, which is used for both permanent bookings and temporary holds.
-    
-    tables.forEach(t => {
-        const group = layer.findOne('#g-'+t.id);
-        if (!group) return;
-        const tableRect = group.findOne('.main-table');
-        const tableIdNumber = Number(t.id);
-        const isSelected = selectedMultiTables.has(tableIdNumber);
-        
-        // Find the active booking or temporary hold object for this table
-        const activeBooking = currentBookings.find(b =>	
-            Number(b.table_id) === tableIdNumber	
-        );
-        
-        if (STAFF_USE_TABLE_IDS.includes(tableIdNumber)) {
-            tableRect.fill(UNAVAILABLE_COLOR);
-        } else {
-            if (activeBooking) {
-                // If activeBooking exists, it is either a permanent slot or a temporary hold.
-                // We use BOOKED_COLOR (gray) for both to prevent accidental admin booking.
-                tableRect.fill(BOOKED_COLOR);
-            } else {
-                tableRect.fill(TABLE_COLOR); // Available (green)
-            }
-        }
-        
-        // Handle selection strokes (visual feedback for the admin)
-        if (isSelected) {
-             tableRect.stroke(MULTI_SELECT_STROKE);	
-             tableRect.strokeWidth(2);
-        } else if (selectedGroup && selectedGroup.id() === group.id()) {
-             tableRect.stroke(SINGLE_SELECT_STROKE);	
-             tableRect.strokeWidth(1);
-        } else {
-             tableRect.stroke('#000');	
-             tableRect.strokeWidth(1);
-        }
-        
-        // Pass the booking/hold data to the group for the modal to display details
-        group.setAttr('booking_data', activeBooking || null);
-    });
-    layer.draw();
-    
-    if (isMultiSelectMode && selectedMultiTables.size > 0) {
-        multiBookButton.style.display = 'block';
-    } else {
-        multiBookButton.style.display = 'none';
-    }
-}
-
-		function drawTable(t){
-			const group = new Konva.Group({	
-				x:t.x,	
-				y:t.y,	
-				id:'g-'+t.id,	
-				table_id: Number(t.id),
-				draggable:true	
-			});
-			layer.add(group);
-
-			const isStaffUseOnly = STAFF_USE_TABLE_IDS.includes(t.id);
-
-			const tableRect = new Konva.Rect({	
-				width:t.w,	
-				height:t.h,	
-				fill: isStaffUseOnly ? UNAVAILABLE_COLOR : TABLE_COLOR,
-				stroke:'#000',	
-				strokeWidth:1,
-				name: 'main-table'	
-			});
-			group.add(tableRect);
-
-			const baseSeatSize = 12;	
-			const seatHalf = baseSeatSize / 2;	
-
-			function makeSeat(x, y, w, h) {
-				group.add(new Konva.Rect({ width:w, height:h, fill:SEAT_COLOR, x:x, y:y }));
-			}
-
-			if (t.w === 30 && t.h === 30) {
-				makeSeat(t.w/2 - baseSeatSize/2, -seatHalf, baseSeatSize, seatHalf);
-				makeSeat(t.w/2 - baseSeatSize/2, t.h, baseSeatSize, seatHalf);
-			} else if (t.w === 30 && t.h === 50) {
-				const v_spacing = (t.h - 2*baseSeatSize)/3;
-				makeSeat(-seatHalf, v_spacing, seatHalf, baseSeatSize);
-				makeSeat(-seatHalf, v_spacing*2 + baseSeatSize, seatHalf, baseSeatSize);
-				makeSeat(t.w, v_spacing, seatHalf, baseSeatSize);
-				makeSeat(t.w, v_spacing*2 + baseSeatSize, seatHalf, baseSeatSize);
-			} else if (t.w === 50 && t.h === 30) {	
-				const h_spacing = (t.w - 2 * baseSeatSize) / 3;
-				makeSeat(h_spacing, -seatHalf, baseSeatSize, seatHalf);
-				makeSeat(h_spacing * 2 + baseSeatSize, -seatHalf, baseSeatSize, seatHalf);
-				makeSeat(h_spacing, t.h, baseSeatSize, seatHalf);
-				makeSeat(h_spacing * 2 + baseSeatSize, t.h, baseSeatSize, seatHalf);
-			} else if (t.w === 90 && t.h === 30) {
-				const h_spacing = t.w / 4;
-				for(let i=0; i<3; i++){
-					const x_pos = h_spacing*(i+1) - baseSeatSize/2;
-					makeSeat(x_pos, -seatHalf, baseSeatSize, seatHalf);
-					makeSeat(x_pos, t.h, baseSeatSize, seatHalf);
-				}
-			}
-			
-			group.on('click', () => {
-				const tableIdNumber = Number(t.id);
-				
-				if (isStaffUseOnly) {
-					alert('This table is reserved for staff walk-ins and is not an online premium booking.');
-					return;
-				}
-				
-				if (isMultiSelectMode) {
-					const isBooked = group.getAttr('booking_data');
-
-					if (selectedMultiTables.has(tableIdNumber)) {
-						selectedMultiTables.delete(tableIdNumber);
-					} else {
-						if(isBooked) {
-							alert(`Table ${tableIdNumber} is already booked at this time. Please select an available table.`);
-							return;
-						}
-						selectedMultiTables.add(tableIdNumber);
-					}
-					updateTableVisuals();
-					selectedGroup = null;	
-				} else {
-					if(selectedGroup) selectedGroup.findOne('.main-table').stroke('#000');
-					
-					selectedGroup = group;
-					group.findOne('.main-table').stroke(SINGLE_SELECT_STROKE);
-					layer.draw();
-					
-					currentSelectedTableId = t.id;
-					showBookingModal(t.id, group.getAttr('booking_data'));
-				}
-			});
-
-			group.on('dblclick', (e) => {
-				e.evt.preventDefault();
-				const booking = group.getAttr('booking_data');
-				
-				if (booking) {
-					if (confirm(`Table ${t.id} is booked. Do you want to cancel the booking (ID: ${booking.id})?`)) {
-						deleteBooking(booking.id);
-					}
-				}
-			});
-
-			return group;
-		}
-		
-		async function loadBookings() {
-    currentSelectedDate = document.getElementById('booking-date').value;
-    currentSelectedTime = document.getElementById('booking-time').value;
-
-    if (!currentSelectedDate || !currentSelectedTime) {
-        currentBookings = [];
-        updateTableVisuals();
-        return;
-    }
-    
-    // --- STEP 1: Fetch Permanent Bookings (premium_slots) ---
-    const slotsPromise = _supa
-        .from('premium_slots')
-        .select('*')
-        .eq('date', currentSelectedDate)
-        .eq('tenant_id', CURRENT_TENANT_ID);
-        
-    // --- STEP 2: Fetch Active Temporary Holds (reserved_holds) ---
-    const holdsPromise = _supa
-        .from('reserved_holds')
-        .select('*') // CRITICAL: Select all columns
-        .eq('date', currentSelectedDate) // CRITICAL: Filter by specific date
-        .gte('expires_at', new Date().toISOString())
-        .filter('tenant_id', 'eq', CURRENT_TENANT_ID);
-
-    const [slotsResult, holdsResult] = await Promise.all([slotsPromise, holdsPromise]);
-        
-    if(slotsResult.error || holdsResult.error){ 
-        console.error('Error fetching data:', slotsResult.error || holdsResult.error); 
-        currentBookings = []; 
-        updateTableVisuals();
-        return;
-    }
-
-    const selectedTimeMinutes = timeToMinutes(currentSelectedTime);	
-    
-    // Filter permanent bookings by time overlap
-    currentBookings = slotsResult.data.filter(b => {
-        const bookingStartMinutes = timeToMinutes(b.start_time);
-        const bookingEndMinutes = timeToMinutes(b.end_time);
-        
-        return selectedTimeMinutes >= bookingStartMinutes && selectedTimeMinutes < bookingEndMinutes;
-    });
-    
-    // Filter holds by time overlap and add them to currentBookings
-    holdsResult.data.forEach(h => {
-        const holdStartMinutes = timeToMinutes(h.start_time);
-        const holdEndMinutes = timeToMinutes(h.end_time);
-
-        const timeOverlaps = selectedTimeMinutes >= holdStartMinutes && selectedTimeMinutes < holdEndMinutes;
-
-        if (timeOverlaps) {
-            // Only add the hold if no permanent booking already exists for this table/slot
-            if (!currentBookings.some(b => Number(b.table_id) === h.table_id)) {
-                currentBookings.push({ 
-                    table_id: h.table_id, 
-                    is_held: true,
-                    start_time: h.start_time,
-                    end_time: h.end_time,
-                    host_notes: `5-MINUTE CHECKOUT HOLD (Expires: ${new Date(h.expires_at).toLocaleTimeString()})`
-                }); 
-            }
-        }
-    });
-    
-    updateTableVisuals();
-}
-		
-		async function createBooking(tableId, startTime, endTime, notes) {
-			const date = document.getElementById('booking-date').value;
-			const tenantId = CURRENT_TENANT_ID;
-			
-			const endTimeMinutes = timeToMinutes(endTime);
-			const startTimeMinutes = timeToMinutes(startTime);
-
-			if (STAFF_USE_TABLE_IDS.includes(Number(tableId))) {
-				console.error('System Warning: Cannot create a premium slot booking on a Staff Use Only table.');
-				return false;
-			}
-
-			if (endTimeMinutes <= startTimeMinutes) {
-				alert('End time must be after start time.');
-				return false;
-			}
-			
-			const bookingPayload = {
-				tableId: Number(tableId),
-				date: date,
-				startTime: startTime,
-				endTime: endTime,
-				notes: notes,
-				tenantId: tenantId,
-			};
-
-			try {
-				const response = await fetch(ADMIN_BOOKING_API_URL, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(bookingPayload),
-				});
-
-				const result = await response.json();
-
-				if (!response.ok) {
-					alert('Admin booking failed: ' + (result.error || 'Check console for Vercel logs.'));
-					console.error('Admin Booking API Error:', result.error || 'Unknown Vercel error.');
-					return false;
-				}
-
-				console.log('Admin Booking Successful:', result.message);
-				await loadBookings();
-				return true; 
-				
-			} catch (error) {
-				alert('Network Error: Could not reach the booking service. Check console.');
-				console.error('Fetch Error:', error);
-				return false;
-			}
-		}
-
-
-		async function createBulkBooking(tableIds, startTime, endTime, notes) {
-			let successfulBookings = 0;
-			let failedTables = [];
-
-			for (const tableId of tableIds) {
-				const success = await createBooking(tableId, startTime, endTime, notes); 
-				if (success) {
-					successfulBookings++;
-				} else {
-					failedTables.push(tableId);
-				}
-			}
-
-			if (successfulBookings > 0) {
-				let message = `Successfully booked ${successfulBookings} table(s).`;
-				if (failedTables.length > 0) {
-					message += ` Tables ${failedTables.join(', ')} failed due to overlaps or errors.`;
-				}
-				alert(message);
-				await loadBookings(); 
-			} else {
-				alert('Bulk booking failed. Check console for details.');
-			}
-		}
-		
-		async function deleteBooking(bookingId) {
-			const { error } = await _supa.from('premium_slots').delete().eq('id', bookingId).eq('tenant_id', CURRENT_TENANT_ID);
-			
-			if (error) { alert('Deletion failed: '+error.message); return false; }	
-			else { alert('Booking removed!'); await loadBookings(); return true; }
-		}
-
-		function cleanNotes(notes) {
-			if (!notes) return 'None';
-			
-			const stripeIdRegex = /(Order|Transaction)?\s*:\s*(cs_live_|cs_test_)[a-zA-Z0-9]{24,}/g;
-			
-			let cleanedNotes = notes.replace(stripeIdRegex, '').trim();
-
-			cleanedNotes = cleanedNotes.replace(/,\s*$/, '').trim();
-
-			return cleanedNotes || 'None';
-		}
-		
-		const singleModal = document.getElementById('booking-modal');
-		const multiModal = document.getElementById('multi-booking-modal');
-		const removeBookingButton = document.getElementById('remove-booking');
-		
-		const closeButtons = document.querySelectorAll('.close-button');	
-
-		closeButtons.forEach(button => {
-			if (button.closest('#booking-modal')) {
-				button.onclick = () => { singleModal.style.display = 'none'; };
-			} else if (button.closest('#multi-booking-modal')) {
-				button.onclick = () => { multiModal.style.display = 'none'; };
+				totalPence += data.price;
 			}
 		});
-		
-		window.onclick = (event) => {	
-			if (event.target == singleModal) { singleModal.style.display = 'none'; }	
-			if (event.target == multiModal) { multiModal.style.display = 'none'; }	
+		return totalPence;
+	}
+
+	function updatePayButton(totalPence) {
+		const totalDollars = (totalPence / 100).toFixed(2);
+		if (totalPence > 0) {
+			payBtn.disabled = false;
+			payBtn.textContent = `Pay £${totalDollars} – Stripe`;
+		} else {
+			payBtn.disabled = true;
+			payBtn.textContent = `Pay for 0 Tables – Stripe`;
+		}
+	}
+
+	function resizeStage() {
+		const containerWidth = container.offsetWidth;
+		const scale = containerWidth / STAGE_WIDTH;
+
+		stage.width(containerWidth);
+		stage.height(STAGE_HEIGHT * scale);
+		stage.scale({ x: scale, y: scale });
+
+		container.style.height = `${STAGE_HEIGHT * scale}px`;
+
+		stage.draw();
+	}
+	
+	function loadFloorplan(callback) {
+		const imageObj = new Image();
+		imageObj.onload = function() {
+			const floorplan = new Konva.Image({
+				x: 0, y: 0, image: imageObj, width: STAGE_WIDTH, height: STAGE_HEIGHT,
+			});
+			backgroundLayer.add(floorplan);
+			
+			backgroundLayer.draw();
+			
+			resizeStage();	
+			
+			if (callback) callback();
 		};
+		imageObj.src = 'floorplan.png?v=' + new Date().getTime();	
+	}
+
+	async function loadBookings() {
+        if (!URL_PARAMS.tenant_id || !URL_PARAMS.booking_date || !URL_PARAMS.booking_time) {
+            console.error("Error: Missing mandatory booking details in URL.");
+            document.getElementById('party-prompt-modal').style.display = 'flex'; 
+            currentBookings = [];
+            updateTableVisuals();
+            return false;
+        }
+
+		const selectedDateSupabase = URL_PARAMS.booking_date;
+		const selectedTime = URL_PARAMS.booking_time;
+
+        // --- STEP 1: Fetch Permanent Bookings (premium_slots) ---
+        const slotsPromise = _supa
+            .from('premium_slots')	
+            .select('*')
+            .eq('date', selectedDateSupabase);
+            
+        // --- STEP 2: Fetch Active Temporary Holds (reserved_holds) ---
+        const holdsPromise = _supa
+            .from('reserved_holds')
+            .select('*') 
+            .eq('date', selectedDateSupabase)
+            .gte('expires_at', new Date().toISOString());
+
+        const [slotsResult, holdsResult] = await Promise.all([slotsPromise, holdsResult]);
+
+        if(slotsResult.error || holdsResult.error){	
+            console.error('Error fetching data:', slotsResult.error || holdsResult.error);	
+            alert('Could not check availability. Try again later.');	
+            currentBookings = [];	
+            return false;
+        }	
+
+        const selectedTimeMinutes = timeToMinutes(selectedTime);	
+        
+        // Filter permanent bookings by time overlap
+        currentBookings = slotsResult.data.filter(b => {
+            const bookingStartMinutes = timeToMinutes(b.start_time);
+            const bookingEndMinutes = timeToMinutes(b.end_time);
+            
+            return selectedTimeMinutes >= bookingStartMinutes && selectedTimeMinutes < bookingEndMinutes;
+        });
+        
+        // Filter holds by time overlap and add them to currentBookings
+        holdsResult.data.forEach(h => {
+            const holdStartMinutes = timeToMinutes(h.start_time);
+            const holdEndMinutes = timeToMinutes(h.end_time);
+
+            // Check for time overlap with the current view time
+            const timeOverlaps = selectedTimeMinutes >= holdStartMinutes && selectedTimeMinutes < holdEndMinutes;
+
+            if (timeOverlaps) {
+                 // Only add the hold if no permanent booking already exists for this table/slot
+                if (!currentBookings.some(b => Number(b.table_id) === h.table_id)) {
+                    currentBookings.push({ 
+                        table_id: h.table_id, 
+                        is_held: true,
+                        start_time: h.start_time,
+                        end_time: h.end_time,
+                        host_notes: `5-MINUTE CHECKOUT HOLD (Expires: ${new Date(h.expires_at).toLocaleTimeString()})`
+                    }); 
+                }
+            }
+        });
+
+		updateTableVisuals();
+		return true;
+	}
+
+
+	function updateTableVisuals() {
+        const currentSelection = [...selectedTableIds];	
+        selectedTableIds = [];	
+        
+        stage.find('.main-table').forEach(tableRect => {
+            const group = tableRect.getParent();
+            const tableId = Number(group.id().substring(2));	
+            
+            const data = tableDataMap.get(tableId);
+            const tableCapacity = data ? getTableCapacity(data.w, data.h) : 0;
+            
+            // 1. Check for Staff Use Only - This always overrides everything
+            if (STAFF_USE_TABLE_IDS.includes(tableId)) {
+                tableRect.fill(UNAVAILABLE_COLOR);
+            } else {
+                // 2. Determine Filter/Booked Status
+                const wastedCapacity = isWastedCapacity(tableCapacity);
+                const tooSmall = isTooSmall(tableCapacity);
+                const isBooked = currentBookings.some(b => Number(b.table_id) === b.table_id);
+                	
+                let isFiltered = false;
+
+                // Rule A: ALWAYS filter out tables that are too large (wasted capacity)
+                if (wastedCapacity) {
+                    isFiltered = true;
+                }	
+                // Rule B: ONLY filter out tables that are too small if we are NOT in Multi-Select Mode
+                else if (!isMultiSelectMode && tooSmall) {
+                    isFiltered = true;
+                }
+
+                if (isFiltered) {
+                    tableRect.fill(FILTERED_COLOR);
+                }	
+                // Priority 2: Booked Status
+                else if (isBooked) {
+                    tableRect.fill(BOOKED_COLOR);
+                }	
+                // Priority 3: Available
+                else {
+                    tableRect.fill(TABLE_COLOR);
+                }
+            }
+            
+            // Reset stroke
+            tableRect.stroke('#000');	
+            tableRect.strokeWidth(1);
+        });
+        
+        // Re-apply selection highlights for available tables (Only tables with TABLE_COLOR are selectable)
+        currentSelection.forEach(id => {
+            const group = layer.findOne('#g-' + id);
+            if (!group) return;	
+            const tableRect = group.findOne('.main-table');
+
+            // Re-select only if the table is currently marked as available (TABLE_COLOR)
+            if (tableRect.fill() === TABLE_COLOR) {
+                selectedTableIds.push(id);
+                tableRect.stroke(HIGHLIGHT_COLOR);
+                tableRect.strokeWidth(3);
+            }
+        });
+
+        const totalPence = calculateTotalPence();
+        updatePayButton(totalPence);
+
+        layer.draw();
+	}
+	
+	async function loadTables() {
+        if (!URL_PARAMS.tenant_id) return false;	
+
+		const baseTables = [
+			{ id: 1, x: 235, y: 110, w: 90, h: 30, rotation: 0 },
+			{ id: 2, x: 100, y: 30, w: 90, h: 30, rotation: 0 },
+			{ id: 3, x: 100, y: 150, w: 30, h: 30, rotation: 0 },
+			{ id: 4, x: 140, y: 220, w: 30, h: 30, rotation: 0 },
+			{ id: 5, x: 180, y: 300, w: 50, h: 30, rotation: 90 },
+			{ id: 6, x: 250, y: 330, w: 30, h: 30, rotation: 0 },
+			{ id: 7, x: 30, y: 300, w: 50, h: 30, rotation: 90 },
+			{ id: 8, x: 400, y: 100, w: 30, h: 30, rotation: 0 },
+			{ id: 9, x: 20, y: 180, w: 30, h: 50, rotation: 0 },
+			{ id: 10, x: 300, y: 240, w: 30, h: 30, rotation: 0 },
+			{ id: 11, x: 40, y: 80, w: 30, h: 30, rotation: 0 },
+			{ id: 12, x: 350, y: 350, w: 50, h: 30, rotation: 0 },
+			{ id: 13, x: 400, y: 280, w: 30, h: 30, rotation: 0 },
+			{ id: 14, x: 250, y: 180, w: 30, h: 30, rotation: 0 },
+			
+			{ id: 18, x: 140, y: 280, w: 30, h: 30, rotation: 0 },
+			{ id: 19, x: 220, y: 280, w: 30, h: 30, rotation: 0 },
+			{ id: 20, x: 300, y: 280, w: 30, h: 30, rotation: 0 },
+			{ id: 21, x: 300, y: 180, w: 50, h: 30, rotation: 90 },
+		];
 		
-		function showBookingModal(tableId, booking) {
-			if (isMultiSelectMode) {
-					alert('Exit Multi-Select Mode to view/create single bookings.');
-					return;
-			}
+		let { data: dbData, error } = await _supa.from('tables').select('id, x, y, rotation').order('id');
+
+		if (error) {
+			console.warn("Could not fetch table positions from Supabase. Using default initial positions.");
+			tables = baseTables;
+		} else {
+			const positionMap = new Map(dbData.map(t => [t.id, t]));
 			
-			document.getElementById('modal-table-id').value = tableId;
-			document.getElementById('modal-title').textContent = 'Table ' + tableId + ' Booking';
-			
-			if (STAFF_USE_TABLE_IDS.includes(Number(tableId))) {
-					alert('This table is reserved for staff use and cannot be manually assigned a premium slot.');
-					return;
-			}
-
-			if (booking) {
-				document.getElementById('current-booking-info').style.display = 'block';
-				document.getElementById('new-booking-form').style.display = 'none';
-				
-				document.getElementById('booked-start').textContent = booking.start_time.substring(0, 5);
-				document.getElementById('booked-end').textContent = booking.end_time.substring(0, 5);
-				
-				document.getElementById('booked-notes').textContent = cleanNotes(booking.host_notes);	
-				
-				removeBookingButton.onclick = async () => {
-					if (confirm('Are sure you want to remove this booking?')) {
-						const success = await deleteBooking(booking.id);
-						if (success) singleModal.style.display = 'none';
-					}
-				};
-			} else {
-				document.getElementById('current-booking-info').style.display = 'none';
-				document.getElementById('new-booking-form').style.display = 'block';
-				
-				document.getElementById('start-time').value = currentSelectedTime;
-				
-				const [h, m] = currentSelectedTime.split(':').map(Number);
-				const endDate = new Date();
-				endDate.setHours(h);
-				endDate.setMinutes(m);
-				endDate.setHours(endDate.getHours() + 1);
-				
-				const endH = String(endDate.getHours()).padStart(2, '0');
-				const endM = String(endDate.getMinutes()).padStart(2, '0');
-
-				document.getElementById('end-time').value = `${endH}:${endM}`;
-				document.getElementById('notes').value = '';
-			}
-			
-			singleModal.style.display = 'block';
-		}
-
-		function showMultiBookingModal() {
-			if (selectedMultiTables.size === 0) return;
-
-			const tableIds = Array.from(selectedMultiTables).sort((a, b) => a - b).join(', ');
-			document.getElementById('selected-table-list').textContent = tableIds;
-			
-			document.getElementById('multi-start-time').value = currentSelectedTime;
-			
-			const [h, m] = currentSelectedTime.split(':').map(Number);
-			const endDate = new Date();
-			endDate.setHours(h);
-			endDate.setMinutes(m);
-			endDate.setHours(endDate.getHours() + 1);
-			
-			const endH = String(endDate.getHours()).padStart(2, '0');
-			const endM = String(endDate.getMinutes()).padStart(2, '0');
-
-			document.getElementById('multi-end-time').value = `${endH}:${endM}`;
-			document.getElementById('multi-notes').value = '';
-
-			multiModal.style.display = 'block';
-		}
-
-		window.addEventListener('resize', resizeStage);
-
-		document.getElementById('multi-select-toggle').onclick = () => {
-			const toggleButton = document.getElementById('multi-select-toggle');
-
-			isMultiSelectMode = !isMultiSelectMode;
-			
-			if (isMultiSelectMode) {
-				toggleButton.dataset.active = 'true';
-				toggleButton.classList.add('active');
-				toggleButton.textContent = 'Exit Multi-Select Mode';
-				
-				if(selectedGroup) {
-					selectedGroup.findOne('.main-table').stroke('#000');
-					selectedGroup = null;
+			tables = baseTables.map(t => {
+				const dbPos = positionMap.get(t.id);
+				if (dbPos) {
+					return {	
+						id: t.id,	
+						x: dbPos.x,	
+						y: dbPos.y,	
+						w: t.w,	
+						h: t.h,	
+						rotation: dbPos.rotation	
+					};
 				}
-				
-				layer.find('Group').forEach(group => group.draggable(false));
-
-			} else {
-				toggleButton.dataset.active = 'false';
-				toggleButton.classList.remove('active');
-				toggleButton.textContent = 'Start Multi-Select Mode';
-				
-				selectedMultiTables.clear();
-				multiBookButton.style.display = 'none';
-
-				layer.find('Group').forEach(group => group.draggable(true));
-			}
-
-			updateTableVisuals();
-		};
-
-		document.getElementById('multi-book-button').onclick = () => {
-			showMultiBookingModal();
-		};
-
-		document.getElementById('multi-booking-form').onsubmit = async (e) => {
-			e.preventDefault();
+				return t;	
+			});
 			
-			const startTime = document.getElementById('multi-start-time').value;
-			const endTime = document.getElementById('multi-end-time').value;
-			const notes = document.getElementById('multi-notes').value;
-			const tableIds = Array.from(selectedMultiTables);
+			tables = tables.filter((t, index, self) =>	
+				index === self.findIndex((tt) => (tt.id === t.id))
+			).sort((a, b) => a.id - b.id);
+		}
+		
+		layer.destroyChildren();	
+		tableDataMap = new Map();
+		
+		tables.forEach(t => {
+			const price = getTablePrice(t.w, t.h);
+			tableDataMap.set(t.id, { id: t.id, price: price, w: t.w, h: t.h });
 
-			if (tableIds.length === 0) {
-				alert("No tables selected for booking.");
-				return;
+			const group = drawTable(t);
+			const tableRect = group.findOne('.main-table');
+			
+			group.offset({ x: tableRect.width()/2, y: tableRect.height()/2 });
+			group.x(t.x + tableRect.width()/2);
+			group.y(t.y + tableRect.height()/2);
+			group.rotation(t.rotation || 0);	
+		});
+		
+		layer.draw();	
+	}
+	
+	function drawTable(t) {
+		const group = new Konva.Group({	
+			x: t.x,	
+			y: t.y,	
+			id: 'g-' + t.id,
+			name: 'selectable-table'	
+		});
+		layer.add(group);
+
+        // Determine table capacity once
+        const tableCapacity = getTableCapacity(t.w, t.h);
+        	
+        // Set initial color based ONLY on staff status. Filtering will be applied later in updateTableVisuals.
+        let initialFill = STAFF_USE_TABLE_IDS.includes(t.id) ? UNAVAILABLE_COLOR : TABLE_COLOR;
+
+
+		const tableRect = new Konva.Rect({	
+			width: t.w,	
+			height: t.h,	
+			fill: initialFill,	
+			stroke: '#000',	
+			strokeWidth: 1,
+			name: 'main-table',
+            table_capacity: tableCapacity
+		});
+		group.add(tableRect);
+
+		group.on('click tap', (e) => selectTable(t.id, e.evt));
+
+		const baseSeatSize = 12;	
+		const seatHalf = baseSeatSize / 2;	
+
+		function makeSeat(x, y, w, h) {
+			group.add(new Konva.Rect({ width:w, height:h, fill:SEAT_COLOR, x:x, y:y }));
+		}
+		
+		if (t.w === 30 && t.h === 30) {
+			const seatW = baseSeatSize;	
+			const seatH = seatHalf;	 	
+			makeSeat(t.w/2 - seatW/2, -seatH, seatW, seatH);	 	 	
+			makeSeat(t.w/2 - seatW/2, t.h, seatW, seatH);	 	 	 	
+		} else if (t.w === 30 && t.h === 50) {
+			const seatW = seatHalf;	 	
+			const seatH = baseSeatSize;	
+			const v_spacing = (t.h - 2 * seatH) / 3;	
+			makeSeat(-seatW, v_spacing, seatW, seatH);	 	
+			makeSeat(-seatW, v_spacing * 2 + seatH, seatW, seatH);	 	
+			makeSeat(t.w, v_spacing, seatW, seatH);	 	
+			makeSeat(t.w, v_spacing * 2 + seatH, seatW, seatH);	 	 	
+		} else if (t.w === 50 && t.h === 30) {	
+			const seatW = baseSeatSize;	
+			const seatH = seatHalf;	
+			const h_spacing = (t.w - 2 * seatW) / 3;
+			makeSeat(h_spacing, -seatH, seatW, seatH);
+			makeSeat(h_spacing * 2 + seatW, -seatH, seatW, seatH);
+			makeSeat(h_spacing, t.h, seatW, seatH);
+			makeSeat(h_spacing * 2 + seatW, t.h, seatW, seatH);
+		} else if (t.w === 90 && t.h === 30) {
+			const seatW = baseSeatSize;	
+			const seatH = seatHalf;	 	
+			const h_spacing = t.w / 4;	
+			for(let i=0; i<3; i++){
+				const x_pos = h_spacing * (i+1) - seatW/2;
+				makeSeat(x_pos, -seatH, seatW, seatH);	 	
+				makeSeat(x_pos, t.h, seatW, seatH);	 	
 			}
+		}
+		return group;
+	}
 
-			await createBulkBooking(tableIds, startTime, endTime, notes);
-			multiModal.style.display = 'none';
+	function selectTable(id, evt) {
+		const group = layer.findOne('#g-' + id);
+		const tableRect = group.findOne('.main-table');
+		
+		// Check 1: Block if staff use only
+		if (tableRect.fill() === UNAVAILABLE_COLOR) {
+			alert('This table is reserved for staff walk-ins.');
+			return;
+		}
+        // Check 2: Block if filtered (too big/small/wasted capacity)
+        if (tableRect.fill() === FILTERED_COLOR) {
+			alert('Table unavailable.');
+			return;
+		}
+        // Check 3: Block if already booked by time
+		if (tableRect.fill() === BOOKED_COLOR) {
+			alert('This table is already booked at this time.');
+			return;
+		}
+
+		const idNumber = Number(id);
+		const index = selectedTableIds.indexOf(idNumber);
+		
+		const isShiftPressed = evt && (evt.shiftKey || evt.ctrlKey || evt.metaKey);
+		const isMulti = isShiftPressed || isMultiSelectMode;
+        	
+        // FIX: Clear existing selection if NOT in multi-select mode and a new table is clicked.
+        if (index === -1 && !isMulti) {
+            stage.find('.main-table').forEach(rect => {
+                // Only un-stroke tables that are currently available (TABLE_COLOR)
+                if (rect.fill() === TABLE_COLOR) {
+                    rect.stroke('#000');
+                    rect.strokeWidth(1);
+                }
+            });
+            selectedTableIds = [];
+        }
+
+
+        // Capacity check for adding tables (only runs if adding a table, index === -1)
+        if (index === -1) {
+            const tableData = tableDataMap.get(idNumber);
+            const tableCapacityToAdd = getTableCapacity(tableData.w, data.h);
+            const newCapacity = getSelectedTablesCapacity() + tableCapacityToAdd;
+            	
+            // --- CHECK: Real-time Multi-Select Buffer Check ---
+            if (isMultiSelectMode && isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, newCapacity)) {
+                alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${getSelectedTablesCapacity()}.`);
+                return;
+            }
+            // --- END CHECK ---
+            	
+            // Enforce the rule: Individual parties cannot select more than 6 capacity total unless using multi-select mode.
+            if (newCapacity > 6 && !isMultiSelectMode) {
+                alert("You cannot select tables that total more than a 6-person capacity unless you start Group Selection mode.");
+                return;
+            }
+            	
+            selectedTableIds.push(idNumber);
+            tableRect.stroke(HIGHLIGHT_COLOR);
+            tableRect.strokeWidth(3);
+
+        } else {
+            // Remove table from selection
+            if (isMulti || selectedTableIds.length === 1) {
+                selectedTableIds.splice(index, 1);
+                tableRect.stroke('#000');
+                tableRect.strokeWidth(1);
+            }
+        }
+		
+		const totalPence = calculateTotalPence();
+		updatePayButton(totalPence);
+
+		layer.draw();
+	}
+
+    // Helper function to determine if the selected capacity is excessively wasteful
+    function isWastedCapacityAllowedForBooking(partySize, totalCapacity) {
+        if (CURRENT_PARTY_SIZE === 0) return false;
+        const maxAllowedCapacity = partySize + 1;	
+        return totalCapacity > maxAllowedCapacity;
+    }
+
+	window.addEventListener('resize', resizeStage);
+
+	document.getElementById('multi-select-toggle').onclick = () => {
+		const toggleButton = document.getElementById('multi-select-toggle');	
+		
+		isMultiSelectMode = !isMultiSelectMode;
+		
+		if (isMultiSelectMode) {
+			toggleButton.dataset.active = 'true';
+			toggleButton.classList.add('active');
+			toggleButton.textContent = 'Exit Multi-Select Mode';
+			
+			if(selectedGroup) {
+				selectedGroup.findOne('.main-table').stroke('#000');
+				selectedGroup = null;
+			}
+			
+			layer.find('Group').forEach(group => group.draggable(false));	
+		} else {
+			toggleButton.dataset.active = 'false';
+			toggleButton.classList.remove('active');
+			toggleButton.textContent = 'Start Multi-Select Mode';
 			
 			selectedMultiTables.clear();
-			document.getElementById('multi-select-toggle').click();	
-		};
+			MULTI_BOOK_BUTTON.style.display = 'none';
 
-		document.getElementById('load-bookings').onclick = async () => {
-			currentSelectedDate = document.getElementById('booking-date').value;
-			currentSelectedTime = document.getElementById('booking-time').value;
-			await loadBookings();
-		};
+			layer.find('Group').forEach(group => group.draggable(true));
+		}
 
-		document.getElementById('booking-form').onsubmit = async (e) => {
-			e.preventDefault();
+		updateTableVisuals();
+	};
+
+	payBtn.onclick = async () => {
+		if (selectedTableIds.length === 0) return;
+        
+        // Error check if URL parameters are missing
+        if (!URL_PARAMS.booking_date || !URL_PARAMS.booking_time) {
+             alert('Error: Booking details not found. Please ensure the link was opened correctly.');
+             return;
+        }
+
+        // Set the hidden party size field for the checkout modal
+        document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
+        document.getElementById('party-size-hidden').placeholder = `Party Size (${CURRENT_PARTY_SIZE})`;
+		
+		await loadBookings(); 
+		
+		const isAnySelectedTableBooked = selectedTableIds.some(id => {
+			const group = layer.findOne('#g-' + id);
+			return group.findOne('.main-table').fill() === BOOKED_COLOR;
+		});
+
+		if (isAnySelectedTableBooked) {
+			alert("Error: One or more selected tables were just booked. Please re-check availability and select again.");
+			updateTableVisuals();
+			return;
+		}
+        
+        // Final Check 1: Check for EXCESSIVE capacity before opening the payment modal
+        const totalCapacity = getSelectedTablesCapacity();
+        if (isWastedCapacityAllowedForBooking(CURRENT_PARTY_SIZE, totalCapacity)) {
+            alert(`Error: Adding this table would exceed the maximum allowed capacity for your party of ${CURRENT_PARTY_SIZE}. Current combined capacity: ${totalCapacity}.`);
+            return;
+        }
+
+		customerModal.style.display = 'flex';
+	};
+
+	// -------- Close button logic for Confirm Reservation Details modal --------
+(function() {
+    const customerModalEl = document.getElementById('customer-modal');
+    const closeBtn = document.getElementById('close-customer-modal');
+
+    // Basic click: hide the modal
+    closeBtn.addEventListener('click', () => {
+        customerModalEl.style.display = 'none';
+    });
+
+    // Make the close button keyboard-friendly (Enter/Space)
+    closeBtn.setAttribute('tabindex', '0');	
+    closeBtn.setAttribute('role', 'button');	
+    closeBtn.setAttribute('aria-label', 'Close dialog');
+
+    closeBtn.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault();
+            customerModalEl.style.display = 'none';
+        }
+    });
+
+    // Close modal when clicking outside the modal-content (optional but common UX)
+    customerModalEl.addEventListener('click', (ev) => {
+        if (ev.target === customerModalEl) {
+            customerModalEl.style.display = 'none';
+        }
+    });
+
+    // Close modal on Escape key (global)
+    document.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Escape' && customerModalEl.style.display === 'flex') {
+            customerModalEl.style.display = 'none';
+        }
+    });
+})();
+
+	customerForm.addEventListener('submit', async function(e) {
+		e.preventDefault();
+
+        getUrlParams();	
+
+		const customerName = document.getElementById('customer-name').value;
+		const partySize = parseInt(document.getElementById('party-size-hidden').value);	
+		const email = document.getElementById('customer-email').value;
+        const receiveOffers = document.getElementById('future-offers-optin').checked;
+
+		if (!customerName || isNaN(partySize) || partySize <= 0 || !email) {
+			alert('Please fill out all fields correctly.');
+			return;
+		}
+
+        const totalCapacity = getSelectedTablesCapacity();
+        	
+        // Final Check 1: Check for EXCESSIVE capacity here before payment processing
+        if (isWastedCapacityAllowedForBooking(partySize, totalCapacity)) {
+            alert(`Error: Your party of ${partySize} cannot reserve tables with a combined capacity of ${totalCapacity}. Please reduce the number of selected tables.`);
+            return;
+        }
+        	
+
+        // Final Check 2: Enforce Minimum Capacity in ALL MODES
+        let requiredMinCapacity;
+        if (partySize <= 2) requiredMinCapacity = 2;
+        else if (partySize <= 4) requiredMinCapacity = 4;
+        else if (partySize <= 6) requiredMinCapacity = 6;
+        else requiredMinCapacity = 6; // Max single table capacity
+
+        if (totalCapacity < requiredMinCapacity) {
+             alert(`Error: Your party size (${partySize}) requires a minimum combined capacity of ${requiredMinCapacity}. Please select a larger table or combination of tables.`);
+             return;
+        }
+
+        // Final Check 3: Max Capacity Check (Party size cannot exceed total selected table capacity)
+        if (partySize > totalCapacity) {
+             alert(`Error: Your party size (${partySize}) exceeds the total selected table capacity (${totalCapacity}).`);
+             return;
+        }
+
+		customerModal.style.display = 'none';	
+
+        // Date and Time are pulled from URL_PARAMS
+		const selectedDate = URL_PARAMS.booking_date;
+		const selectedTime = URL_PARAMS.booking_time;
+		
+		const totalPence = calculateTotalPence();	
+		
+		if (totalPence === 0) {
+			alert("Error: Selected tables have no defined price (Total is 0).");
+			return;
+		}
+
+		try {
+			const res = await fetch('https://stripe-serverless-fresh.vercel.app/api/create-checkout ', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({	
+					table_ids: selectedTableIds,	
+					email: email,
+					booking_date: selectedDate,
+					booking_time: selectedTime,
+					total_pence: totalPence,
+					customer_name: customerName,
+					party_size: partySize,
+					tenant_id: URL_PARAMS.tenant_id,
+					booking_ref: URL_PARAMS.booking_ref,
+                    receive_offers: receiveOffers
+				})
+			});
 			
-			const tableId = document.getElementById('modal-table-id').value;	
-			const startTime = document.getElementById('start-time').value;
-			const endTime = document.getElementById('end-time').value;
-			const notes = document.getElementById('notes').value;
-
-			const success = await createBooking(tableId, startTime, endTime, notes);
-			if (success) {	
-				singleModal.style.display = 'none';
-				await loadBookings();	
+			const data = await res.json();
+			if (data.url) {
+				window.location.href = data.url;	 	
 			} else {
-				alert("Failed to create single booking. Check inputs/console.");
+				console.error(data);
+				alert('Checkout creation failed. See console for details.');
 			}
-		};
+		} catch (err) {
+			console.error(err);
+			alert('Checkout creation failed. See console for details.');
+		}
+	});	
 
+    // Initialize the application: check URL params, log initial click, and load map
+    (async () => {
+        getUrlParams();
+        logInitialClick();
+        
+        // CRITICAL FIX: Set party size from URL or default to 1
+        let urlPartySize = parseInt(URL_PARAMS.party_size);
+        if (isNaN(urlPartySize) || urlPartySize < 1) {
+            urlPartySize = 1; // Default to 1 if size is corrupted or missing
+        }
+        CURRENT_PARTY_SIZE = urlPartySize;
 
-		document.getElementById('rotate').onclick = () => {
-			if (isMultiSelectMode) {
-				selectedMultiTables.forEach(tableId => {
-					const group = layer.findOne('#g-' + tableId);
-					if (group) {
-						group.rotation(group.rotation() + 90);
-					}
-				});
-				layer.draw();
-			} else if(selectedGroup){
-				selectedGroup.rotation(selectedGroup.rotation()+90);
-				layer.draw();
-			}
-		};
+        // Auto-close prompt and load map
+        document.getElementById('party-prompt-modal').style.display = 'none'; 
 
-		document.getElementById('save').onclick = async () => {
-			const updates = tables.map(t=>{
-				const g = layer.findOne('#g-'+t.id);
-				if (!g) return null;	
-				
-				const tableRect = g.findOne('.main-table');
-				const finalX = g.x() - tableRect.width()/2;
-				const finalY = g.y() - tableRect.height()/2;
-				const finalRotation = g.rotation();
-				return { id:t.id, x:finalX, y:finalY, rotation: finalRotation, tenant_id: CURRENT_TENANT_ID };
-			}).filter(t => t !== null);
-			
-			const { data, error } = await _supa.from('tables').upsert(updates).select('*, rotation');
-			if(error){ alert('Save failed: '+error.message); } else { tables = data; alert('Layout saved!'); }
-		};
+        // Set the hidden party size field for the payment modal to use the autodetected size
+        document.getElementById('party-size-hidden').value = CURRENT_PARTY_SIZE;
 
-		setDefaultDateTime();
-		window.addEventListener('resize', resizeStage);
-		loadBackground(loadTables);
+        // Now load the map instantly
+        window.addEventListener('resize', resizeStage);
+        loadFloorplan(loadTables);
+    })();
 	</script>
 </body>
 </html>
