@@ -856,41 +856,11 @@
 		}
 		
 		async function deleteBooking(bookingId) {
-    const tenantId = CURRENT_TENANT_ID; // Use the stored tenant ID
-    // CRITICAL: URL for the secure deletion API (Match your actual Vercel domain)
-    const deleteApiUrl = 'https://stripe-serverless-fresh.vercel.app/api/admin-delete-booking'; 
-
-    const payload = {
-        bookingId: bookingId,
-        tenantId: tenantId
-    };
-
-    try {
-        const response = await fetch(deleteApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-
-        // We check response.ok and process the JSON result
-        if (!response.ok) {
-            const errorResult = await response.json();
-            console.error('Admin Delete API Error:', errorResult.error || errorResult.details);
-            alert('Admin deletion failed: ' + (errorResult.error || 'Check browser console for details.'));
-            return false;
-        }
-
-        // SUCCESS: Reload the entire map data
-        alert('Booking removed!');
-        await loadBookings(); // This fetches the new, updated list and refreshes the map
-        return true; 
-
-    } catch (error) {
-        alert('Network Error: Could not reach the deletion service.');
-        console.error('Fetch Error:', error);
-        return false;
-    }
-}
+			const { error } = await _supa.from('premium_slots').delete().eq('id', bookingId).eq('tenant_id', CURRENT_TENANT_ID);
+			
+			if (error) { alert('Deletion failed: '+error.message); return false; }	
+			else { alert('Booking removed!'); await loadBookings(); return true; }
+		}
 
 		function cleanNotes(notes) {
 			if (!notes) return 'None';
