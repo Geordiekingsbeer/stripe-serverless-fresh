@@ -856,11 +856,35 @@
 		}
 		
 		async function deleteBooking(bookingId) {
-			const { error } = await _supa.from('premium_slots').delete().eq('id', bookingId).eq('tenant_id', CURRENT_TENANT_ID);
-			
-			if (error) { alert('Deletion failed: '+error.message); return false; }	
-			else { alert('Booking removed!'); await loadBookings(); return true; }
-		}
+    console.log(`Attempting to delete booking ID: ${bookingId} for tenant: ${CURRENT_TENANT_ID}`);
+    
+    // Use select and count to check how many rows were affected
+    const { error, count } = await _supa
+        .from('premium_slots')
+        .delete()
+        .eq('id', bookingId)
+        .eq('tenant_id', CURRENT_TENANT_ID)
+        .select('id', { count: 'exact' }); // You can select any column, just need the count
+
+    if (error) {
+        // RLS or a true Supabase error will be caught here
+        console.error('Supabase Deletion Error:', error.message);
+        alert('Deletion failed (Supabase Error): ' + error.message);
+        return false;
+    }
+
+    if (count && count > 0) {
+        console.log(`Successfully deleted ${count} row(s).`);
+        alert('Booking removed!');
+        await loadBookings();
+        return true;
+    } else {
+        // Catches 0 rows deleted (due to RLS or ID/tenant_id mismatch)
+        console.warn('Deletion failed: 0 rows affected. Check RLS policy or data matching.');
+        alert('Deletion failed: The booking could not be found or you lack permissions.');
+        return false;
+    }
+}
 
 		function cleanNotes(notes) {
 			if (!notes) return 'None';
