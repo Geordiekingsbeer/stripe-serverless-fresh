@@ -50,50 +50,16 @@ export default async (req, res) => {
 };
 ```
 
----
+### Step 2: Final Verification (Admin Page)
 
-## 🛠️ Fix 2: Admin Frontend Update (`admin.html`)
+Once the server file is clean, we verify the Admin Page is calling it correctly.
 
-This ensures your local Admin Page is calling the API correctly.
-
-Find the `async function deleteBooking(bookingId) { ... }` function in your **`admin.html`** file (around **line 796**) and **replace the entire function** with the secure version below.
+**Action:** Ensure your `deleteBooking` function in **`admin.html`** calls the API.
 
 ```javascript
-// admin.html (~line 796) - REPLACE ENTIRE deleteBooking FUNCTION
-
+// admin.html (~line 796) - Your front-end function
 async function deleteBooking(bookingId) {
-    const tenantId = CURRENT_TENANT_ID; // Use the stored tenant ID
-    // CRITICAL: URL for the secure deletion API (Match your actual Vercel domain)
+    const tenantId = CURRENT_TENANT_ID; 
     const deleteApiUrl = 'https://stripe-serverless-fresh.vercel.app/api/admin-delete-booking'; 
-
-    const payload = {
-        bookingId: bookingId,
-        tenantId: tenantId
-    };
-
-    try {
-        const response = await fetch(deleteApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-
-        // We check response.ok and process the JSON result
-        if (!response.ok) {
-            const errorResult = await response.json();
-            console.error('Admin Delete API Error:', errorResult.error || errorResult.details);
-            alert('Admin deletion failed: ' + (errorResult.error || 'Check browser console for details.'));
-            return false;
-        }
-
-        // SUCCESS: Reload the entire map data
-        alert('Booking removed!');
-        await loadBookings(); // This fetches the new, updated list and refreshes the map
-        return true; 
-
-    } catch (error) {
-        alert('Network Error: Could not reach the deletion service.');
-        console.error('Fetch Error:', error);
-        return false;
-    }
+    // ... (This function remains the same as the one I gave you in the last step)
 }
